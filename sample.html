@@ -1,0 +1,2296 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"> <!-- Added viewport meta for better mobile handling -->
+  <title>tcm Dashboard Clone - Live Google Sheet Data</title>
+  <style>
+    /* --- Theme Variables & Base Styles --- */
+    :root {
+      /* Light Theme (Default) */
+      --bg-base: #f0f0f0; /* Added base background color for subtle context */
+      --bg-glass-sidebar: rgba(50, 70, 90, 0.75); /* Slightly adjusted, more opaque */
+      --bg-glass-header: rgba(240, 240, 240, 0.6); /* Lighter, more transparent */
+      --bg-glass-content: rgba(255, 255, 255, 0.5); /* White-ish, more transparent */
+      --bg-glass-dropdown: rgba(255, 255, 255, 0.9); /* Less blur/more solid for dropdowns */
+      --bg-glass-table-header: rgba(220, 220, 220, 0.7); /* Softer header */
+      --bg-glass-table-row-alt: rgba(240, 240, 240, 0.4); /* More subtle stripe */
+      --bg-glass-table-footer: rgba(210, 230, 250, 0.75); /* Light blue/gray */
+      --bg-hover: rgba(0, 150, 255, 0.1); /* Subtle blue hover effect */
+      --text-main: #212121; /* Darker main text */
+      --text-sidebar: #eeeeee; /* Lighter text for dark sidebar */
+      --text-light: #616161; /* Slightly lighter gray text */
+      --text-on-bar: #ffffff; /* Text on progress bars */
+      --progress-bar-bg: rgba(0, 0, 0, 0.15); /* Slightly darker progress bar bg */
+      --progress-bar-fill: #1976D2; /* Medium Blue */
+      --bar-a-color: #2196F3; /* Blue */
+      --bar-b-color: #FF5722; /* Orange Red */
+      --border-glass: 1px solid rgba(255, 255, 255, 0.25); /* Brighter border for light theme */
+      --border-light: rgba(100, 100, 100, 0.2); /* Light border for separators */
+      --glass-inset-shadow: inset 0 0 8px rgba(255, 255, 255, 0.2); /* Subtle inner light */
+      --glass-shadow: 0 4px 20px rgba(0, 0, 0, 0.2); /* Stronger external shadow */
+      --theme-icon-color: #212121; /* Default theme icon color */
+      --scrollbar-track-color: transparent; /* Scrollbar track */
+      --scrollbar-thumb-color: rgba(0,0,0,0.3); /* Scrollbar thumb */
+    }
+
+    body.dark-theme {
+      /* Dark Theme */
+      --bg-base: #1a1a1a; 
+      --bg-glass-sidebar: rgba(40, 40, 50, 0.8); /* Darker, more opaque */
+      --bg-glass-header: rgba(50, 50, 60, 0.7); /* Darker, more transparent */
+      --bg-glass-content: rgba(35, 35, 45, 0.6); /* Darker, more transparent */
+      --bg-glass-dropdown: rgba(60, 60, 70, 0.95); /* Darker, less blur/more solid */
+      --bg-glass-table-header: rgba(55, 55, 65, 0.7); 
+      --bg-glass-table-row-alt: rgba(45, 45, 55, 0.4); 
+      --bg-glass-table-footer: rgba(50, 70, 90, 0.75); 
+      --bg-hover: rgba(90, 130, 180, 0.2); /* Subtle dark blue hover effect */
+      --text-main: #e0e0e0; /* Lighter main text */
+      --text-sidebar: #f0f0f0; /* Lighter text for sidebar */
+      --text-light: #a0a0a0; /* Lighter gray text */
+      --text-on-bar: #ffffff;
+      --progress-bar-bg: rgba(255, 255, 255, 0.1);
+      --progress-bar-fill: #42A5F5; /* Lighter Blue */
+      --bar-a-color: #64B5F6; /* Light Blue */
+      --bar-b-color: #FF8A65; /* Light Orange Red */
+      --border-glass: 1px solid rgba(255, 255, 255, 0.1); /* Softer border for dark theme */
+      --border-light: rgba(150, 150, 150, 0.15); /* Softer border separators */
+      --glass-inset-shadow: inset 0 0 8px rgba(0, 0, 0, 0.3); /* Subtle inner dark shadow */
+      --glass-shadow: 0 4px 20px rgba(0, 0, 0, 0.4); /* Stronger external shadow for dark theme */
+      --theme-icon-color: #e0e0e0; /* Dark theme icon color */
+      --scrollbar-track-color: transparent; 
+      --scrollbar-thumb-color: rgba(255,255,255,0.2); /* Scrollbar thumb */
+    }
+
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol'; /* Expanded font stack */
+      font-size: 12px;
+      color: var(--text-main);
+      overflow: hidden;
+      background-color: var(--bg-base); /* Base background visible *behind* glass */
+      transition: background-color 0.5s ease, color 0.5s ease; /* Smoother theme transition */
+    }
+
+    /* Glass Effect Application & Transitions */
+    .glass-effect {
+        backdrop-filter: blur(12px); /* Slightly stronger blur */
+        -webkit-backdrop-filter: blur(12px); 
+        border: var(--border-glass);
+        box-shadow: var(--glass-shadow), var(--glass-inset-shadow); /* Combined shadows */
+        /* Transition all relevant glass properties */
+        transition: background-color 0.5s ease, border-color 0.5s ease, box-shadow 0.5s ease, backdrop-filter 0.5s ease;
+        position: relative; /* Needed for potential inner layers or reflections later */
+    }
+     
+    /* Basic Reset & Focus Styling (Good practice) */
+    *, *::before, *::after {
+        box-sizing: border-box; /* Easier padding/border control */
+    }
+    *:focus {
+        outline: 2px solid var(--progress-bar-fill); /* Accessible focus indicator */
+        outline-offset: 2px;
+    }
+
+    /* Scrollbar Styling (for .hierarchy-container and report containers) */
+    .hierarchy-container, .report-table-container, .comparison-container, .tva-report-container, .modal-body {
+        scrollbar-width: thin; /* Standard property */
+        scrollbar-color: var(--scrollbar-thumb-color) var(--scrollbar-track-color); /* Standard property */
+    }
+    /* For Webkit browsers */
+    .hierarchy-container::-webkit-scrollbar, .report-table-container::-webkit-scrollbar, 
+    .comparison-container::-webkit-scrollbar, .tva-report-container::-webkit-scrollbar,
+    .modal-body::-webkit-scrollbar {
+        width: 8px; /* Compact scrollbar width */
+    }
+    .hierarchy-container::-webkit-scrollbar-track, .report-table-container::-webkit-scrollbar-track, 
+    .comparison-container::-webkit-scrollbar-track, .tva-report-container::-webkit-scrollbar-track,
+    .modal-body::-webkit-scrollbar-track {
+        background: var(--scrollbar-track-color);
+    }
+    .hierarchy-container::-webkit-scrollbar-thumb, .report-table-container::-webkit-scrollbar-thumb, 
+    .comparison-container::-webkit-scrollbar-thumb, .tva-report-container::-webkit-scrollbar-thumb,
+    .modal-body::-webkit-scrollbar-thumb {
+        background-color: var(--scrollbar-thumb-color);
+        border-radius: 4px;
+        border: 2px solid var(--bg-base); /* Gives it a slight inset effect */
+    }
+
+
+    /* --- Sidebar Styles --- */
+    .sidebar {
+      width: 280px;
+      color: var(--text-sidebar);
+      height: 100vh;
+      position: fixed;
+      top: 0;
+      left: 0;
+      z-index: 10;
+      display: flex;
+      flex-direction: column;
+      background-color: var(--bg-glass-sidebar);
+      border-right: var(--border-light);
+    }
+    .sidebar-header {
+      padding: 12px 15px;
+      font-size: 1em; /* Slightly larger font */
+      font-weight: 600; /* Slightly bolder */
+      text-transform: uppercase;
+      flex-shrink: 0;
+      background-color: rgba(0,0,0,0.1); /* Header background */
+      border-bottom: var(--border-light); /* Use light border for internal division */
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1); /* Subtle shadow */
+    }
+    .hierarchy-container {
+      overflow-y: auto;
+      flex-grow: 1;
+      padding: 12px;
+    }
+    .tree-node { list-style-type: none; margin: 0; padding: 0; }
+    .tree-item { margin-bottom: 2px; } /* Tighter spacing */
+    .tree-item label {
+      display: flex;
+      align-items: center;
+      cursor: pointer;
+      width: 100%;
+      border-radius: 5px; /* Slightly rounded corners */
+      padding: 6px 8px; /* Slightly more padding */
+      transition: background-color 0.3s ease, opacity 0.3s ease; /* Smooth transitions */
+    }
+    .tree-item label:hover {
+      background-color: var(--bg-hover);
+      opacity: 1;
+    }
+     .tree-item input[type="checkbox"] {
+      margin-right: 8px; /* More space */
+      flex-shrink: 0;
+      width: 16px; /* Slightly larger */
+      height: 16px;
+      accent-color: var(--progress-bar-fill); /* Consistent accent color */
+      cursor: pointer;
+      /* Custom checkbox styling attempt (complex, often browser-dependent) */
+      -webkit-appearance: none;
+      -moz-appearance: none;
+      appearance: none;
+      border: 1.5px solid var(--text-sidebar); /* Border matches text */
+      border-radius: 3px;
+      background-color: transparent;
+      transition: background-color 0.2s ease, border-color 0.2s ease;
+      position: relative; /* For checkmark */
+    }
+    .tree-item input[type="checkbox"]:checked {
+      background-color: var(--progress-bar-fill);
+      border-color: var(--progress-bar-fill);
+    }
+     /* Indeterminate state styling */
+    .tree-item input[type="checkbox"]:indeterminate {
+      background-color: var(--progress-bar-fill); /* Same fill color */
+      border-color: var(--progress-bar-fill); /* Same border color */
+    }
+     /* Custom checkmark/dash for checkbox states */
+     .tree-item input[type="checkbox"]::before {
+         content: '';
+         position: absolute;
+         top: 50%;
+         left: 50%;
+         transform: translate(-50%, -50%);
+         color: var(--text-on-bar); /* Checkmark color */
+         font-size: 12px;
+         line-height: 1;
+         pointer-events: none; /* Don't interfere with click */
+     }
+     .tree-item input[type="checkbox"]:checked::before {
+         content: '✓'; /* Checkmark symbol */
+     }
+     .tree-item input[type="checkbox"]:indeterminate::before {
+         content: '—'; /* Dash symbol */
+     }
+
+
+    .tree-item .toggle {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 20px; /* Consistent size */
+      height: 20px;
+      font-size: 0.8em;
+      transition: transform 0.2s ease-in-out, background-color 0.2s ease; /* Add background transition */
+      margin-right: 6px;
+      border-radius: 3px;
+      color: var(--text-light); /* Use text-light for subtle look */
+      flex-shrink: 0;
+    }
+    .tree-item label:hover .toggle {
+        background-color: rgba(255, 255, 255, 0.15);
+    }
+    .tree-item .toggle.open {
+      transform: rotate(90deg);
+    }
+    .sub-tree {
+      display: none;
+      padding-left: 24px; /* Deeper indent */
+      border-left: 1px dashed var(--border-light);
+      margin-left: 6px; /* Adjust margin based on indent */
+    }
+    .sub-tree.open {
+      display: block;
+    }
+    .tree-gm > label { font-weight: 600; font-size: 1em;} /* Stronger GM label */
+     .tree-asm > label { font-weight: 500; font-size: 0.95em;} /* Subtle ASM label */
+     .tree-branch > label { font-size: 0.9em;} /* Smallest branch label */
+
+    /* --- Top Menu Styles --- */
+    .top-menu {
+      display: flex;
+      padding: 0 15px; /* Consistent horizontal padding */
+      font-size: 13px;
+      position: fixed;
+      top: 0;
+      left: 280px;
+      right: 0;
+      z-index: 5;
+      height: 50px; /* Standard header height */
+      align-items: center;
+      background-color: var(--bg-glass-header);
+      border-bottom: var(--border-glass);
+      color: var(--text-main);
+      justify-content: space-between; /* Separate left/right sides */
+    }
+    .top-menu-left, .top-menu-right {
+      display: flex;
+      align-items: center;
+      height: 100%;
+    }
+
+    /* Refresh Button Styling */
+    #refresh-dashboard-btn {
+        display: flex;
+        align-items: center;
+        padding: 5px 10px; /* Padding consistent with menu items */
+        margin-right: 15px; /* Space from other right items */
+        color: var(--theme-icon-color);
+        font-size: 0.9em;
+        cursor: pointer;
+        transition: color 0.2s ease;
+        border-radius: 5px; /* Match menu items */
+    }
+    #refresh-dashboard-btn:hover {
+        color: var(--bar-a-color);
+         background-color: var(--bg-hover);
+    }
+     #refresh-dashboard-btn svg path {
+         fill: currentColor; /* Use parent text color for SVG fill */
+     }
+
+
+    /* Top menu item specific styling */
+    .top-menu-left > div, .top-menu-right > div {
+      position: relative;
+      margin-right: 5px; /* Spacing between items */
+      cursor: pointer;
+      padding: 5px 10px;
+      display: flex;
+      align-items: center;
+      height: 100%;
+      border-radius: 5px;
+      transition: background-color 0.3s ease, font-weight 0.1s ease;
+    }
+    .top-menu-left > div:last-child, .top-menu-right > div:last-child { margin-right: 0; } /* No margin on last item */
+
+    .top-menu-left > div:hover, .top-menu-right > div:hover,
+    .top-menu-left > div.active, .top-menu-right > div.active {
+      background-color: var(--bg-hover);
+      font-weight: 500;
+    }
+     .top-menu-left > div.active:hover, .top-menu-right > div.active:hover {
+         background-color: var(--bg-hover); /* Maintain hover style even when active */
+     }
+
+
+    .top-menu-icon {
+      width: 20px; /* Slightly larger icon size */
+      height: 20px;
+      fill: var(--theme-icon-color);
+      margin-right: 8px; /* More space after icon */
+       transition: fill 0.3s ease;
+    }
+
+    .dropdown {
+      display: none;
+      position: absolute;
+      top: calc(100% + 5px); /* Position slightly below the parent */
+      left: 0;
+      background: var(--bg-glass-dropdown);
+      min-width: 180px;
+      z-index: 20;
+      border-radius: 8px; /* More rounded */
+      overflow: hidden;
+      border: var(--border-glass);
+      box-shadow: 0 8px 25px rgba(0,0,0,0.3);
+       /* Animation for dropdown */
+       opacity: 0;
+       transform: translateY(10px);
+       transition: opacity 0.3s ease, transform 0.3s ease;
+    }
+    #profile-menu .dropdown { right: 0; left: auto; } /* Align profile dropdown to the right */
+
+    .top-menu-left > div:hover .dropdown, .top-menu-right > div:hover .dropdown {
+        display: block;
+        opacity: 1;
+        transform: translateY(0); /* Slide up slightly */
+    }
+
+    .dropdown div {
+      padding: 8px 15px; /* More padding inside dropdown items */
+      white-space: nowrap;
+      font-size: 12px;
+      color: var(--text-main); /* Ensure text color is readable in dropdown */
+      transition: background-color 0.2s ease;
+    }
+    .dropdown div:hover { background-color: var(--bg-hover); }
+    /* Ensure dropdown items take text color from --text-main variable */
+     .dropdown div { color: var(--text-main); }
+
+
+    /* --- Content Area Styles --- */
+    .content {
+      margin-left: 281px; /* Sidebar width + border */
+      margin-top: 51px; /* Header height + border */
+      padding: 0;
+      height: calc(100vh - 51px); /* Adjusted height calculation */
+      overflow: hidden; /* Contains the scrollable content */
+      display: block; /* Default state */
+      position: relative; /* For absolute positioning of potential loaders/overlays */
+    }
+    .view-container {
+      background-color: var(--bg-glass-content);
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      overflow: hidden; /* Ensures child scrolling doesn't overflow container */
+      border: none; /* Glass effect already applied to content wrapper */
+      box-shadow: none;
+    }
+    .view-header {
+      color: var(--text-main);
+      padding: 12px 15px;
+      font-weight: 600;
+      font-size: 1.1em; /* Slightly larger header font */
+      background-color: rgba(0,0,0,0.04); /* Subtle header background */
+      border-bottom: var(--border-light); /* Use light border for internal division */
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-shrink: 0; /* Prevent header from shrinking */
+    }
+
+    /* --- Table/Report Styles --- */
+    /* Added base padding here for consistency */
+    .report-table-container, .comparison-container, .tva-report-container { 
+        padding: 15px; /* Slightly more padding */
+        flex-grow: 1; 
+        overflow: auto; /* Allows content inside to scroll */
+    }
+
+    .report-table, .comparison-table, .tva-table { 
+        width: 100%; 
+        border-collapse: collapse; 
+        background-color: transparent; 
+        border-radius: 8px; /* Added border-radius to table */
+        overflow: hidden; /* Ensures rounded corners apply to borders */
+        border: var(--border-light); /* Optional: Add a subtle border around the whole table */
+    }
+    .report-table th, .report-table td, .comparison-table th, .comparison-table td, .tva-table th, .tva-table td { 
+        border: 1px solid var(--border-light); /* Border between cells */
+        padding: 8px 10px; /* Increased padding */
+        text-align: left; 
+        font-size: 11.5px; /* Slightly larger font */
+        vertical-align: middle;
+    }
+    .report-table thead th, .comparison-table thead th, .tva-table thead th { 
+        background-color: var(--bg-glass-table-header); 
+        position: sticky; 
+        top: 0; 
+        z-index: 1;
+        font-weight: 600;
+        text-transform: uppercase;
+        font-size: 10px; /* Uppercase headers can be smaller */
+    }
+    .report-table tbody tr:nth-child(even), .tva-table tbody tr:nth-child(even) { 
+        background-color: var(--bg-glass-table-row-alt); 
+    }
+     .report-table tbody tr, .tva-table tbody tr {
+         transition: background-color 0.2s ease; /* Hover transition */
+     }
+     .report-table tbody tr:hover {
+          background-color: var(--bg-hover); /* Consistent hover style */
+     }
+
+    .report-table .number-cell, .comparison-table .number-cell, .tva-table .number-cell { 
+        text-align: right; 
+        font-family: monospace, sans-serif; /* Optional: Use monospace for numbers */
+        font-size: 12px; /* Maintain slightly larger size for values */
+        font-weight: 500;
+    }
+     .tva-table tbody td:nth-child(4), .tva-table tbody td:nth-child(5), .tva-table tbody td:nth-child(6) {
+         /* Specific styling for progress bar cells in TvsA table */
+         padding-top: 4px;
+         padding-bottom: 4px;
+     }
+
+
+    .report-table tfoot .total-row td, .tva-table tfoot .total-row td { 
+        font-weight: 600; 
+        background-color: var(--bg-glass-table-footer);
+         position: sticky; /* Make footer sticky if needed (depends on layout) */
+         bottom: 0;
+         z-index: 1;
+    }
+    .tva-table tbody tr { cursor: pointer; } /* Cursor hint for clickable rows */
+
+    .placeholder-text { 
+        padding: 40px; /* More generous padding */
+        text-align: center; 
+        color: var(--text-light); 
+        font-size: 14px; 
+        font-style: italic;
+    }
+     .view-container .placeholder-text { /* Style placeholder within a view container */
+        display: flex; /* Use flexbox to center */
+        align-items: center;
+        justify-content: center;
+        height: 100%; /* Fill container height */
+        width: 100%; /* Fill container width */
+        background-color: rgba(0,0,0,0.02); /* Very subtle background */
+     }
+
+
+    /* --- TvsA REPORT SPECIFIC STYLES --- */
+    .tva-upload-container {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        flex-grow: 1; /* Take up available space */
+        padding: 20px;
+        box-sizing: border-box;
+        color: var(--text-main);
+        /* Removed fixed height, use flex-grow */
+    }
+    .tva-upload-box {
+        background-color: var(--bg-glass-content);
+        border: var(--border-glass);
+        border-radius: 10px; /* More rounded */
+        padding: 30px; /* More padding */
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        width: 100%;
+        max-width: 450px; /* Slightly wider max width */
+        box-shadow: var(--glass-shadow);
+    }
+    .tva-upload-box h3 { 
+        margin-top: 0; 
+        font-size: 1.2em; /* Larger heading */
+        color: var(--text-main); 
+        margin-bottom: 15px; 
+        border-bottom: 1px solid var(--border-light); 
+        padding-bottom: 10px; /* More padding below border */
+        width: 100%;
+        font-weight: 600;
+    }
+    .file-input-wrapper { 
+        position: relative; 
+        width: 100%; 
+        margin-bottom: 15px; 
+    }
+    .file-input-label {
+        display: inline-block;
+        padding: 10px 20px; /* More padding */
+        background-color: var(--bar-a-color);
+        color: white;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 14px; /* Larger font */
+        transition: background-color 0.2s ease, opacity 0.2s ease;
+        font-weight: 500;
+    }
+    .file-input-label:hover { opacity: 0.9; background-color: #1565C0;} /* Darker blue on hover */
+    .hidden-file-input {
+        position: absolute;
+        top: 0; left: 0; width: 100%; height: 100%;
+        opacity: 0; cursor: pointer; z-index: 1;
+    }
+    .file-name-display { 
+        color: var(--text-light);
+        font-style: italic;
+        margin-top: 10px; /* More space */
+        display: block;
+        max-width: 80%; /* Constrain width */
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        font-size: 12px; /* Consistent font size */
+        align-self: flex-start; /* Align left below button */
+         margin-left: auto; margin-right: auto; /* Center if max-width applies */
+    }
+    .upload-complete-indicator {
+        color: #4CAF50;
+        font-weight: bold;
+        font-size: 1.6em; /* Larger indicator */
+        margin-top: 8px;
+    }
+    #process-tva-file-btn {
+        padding: 10px 20px; /* More padding */
+        background-color: #4CAF50; /* Green button */
+        color: white;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 14px;
+        margin-top: 20px; /* More space */
+        transition: background-color 0.2s ease, opacity 0.2s ease;
+        font-weight: 500;
+    }
+    #process-tva-file-btn:hover:not(:disabled) { background-color: #388E3C; } /* Darker green on hover */
+    #process-tva-file-btn:disabled { background-color: var(--border-light); cursor: not-allowed; opacity: 0.6; color: var(--text-light);}
+
+    .tva-report-main-view { /* Container for the actual TvsA table */
+        flex-grow: 1;
+        display: none;
+        flex-direction: column;
+        height: 100%;
+        /* padding handled by .tva-report-container */
+    }
+
+    /* --- Comparison Report Styles --- */
+     .comparison-setup-container {
+         display: grid;
+         grid-template-columns: 1fr 1fr; /* Two columns for groups A and B */
+         gap: 20px; /* Space between columns */
+         padding: 15px;
+         border-bottom: 1px solid var(--border-light); /* Separator */
+     }
+    .comparison-setup-container fieldset {
+        border: 1px solid var(--border-light);
+        border-radius: 8px;
+        padding: 15px;
+        margin: 0; /* Remove default fieldset margin */
+    }
+    .comparison-setup-container legend {
+        font-weight: 600;
+        padding: 0 10px;
+        color: var(--text-main);
+    }
+    .comparison-setup-form {
+        display: grid;
+        grid-template-columns: auto 1fr; /* Label then input/select */
+        gap: 10px 15px; /* Row gap, Column gap */
+        align-items: center;
+        font-size: 0.95em;
+    }
+     .comparison-setup-form label {
+         font-weight: 500;
+         color: var(--text-light);
+     }
+     .comparison-setup-form select {
+         padding: 6px 10px;
+         border: 1px solid var(--border-light);
+         border-radius: 4px;
+         background-color: rgba(0,0,0,0.05);
+         color: var(--text-main);
+         font-size: 1em;
+          /* Match height */
+          height: 32px; /* Explicit height for consistency */
+         appearance: none; /* Hide default arrow */
+         background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23444%22%20d%3D%22M287%2C114.7L159.2%2C7c-3.8-3.8-10.2-3.8-14%2C0L5.4%2C114.7c-3.8%2C3.8-3.8%2C10.2%2C0%2C14s10.2%2C3.8%2C14%2C0l132-132l130%2C130c3.8%2C3.8%2C10.2%2C3.8%2C14%2C0S290.8%2C118.5%2C287%2C114.7z%22%2F%3E%3C%2Fsvg%3E'); /* Custom SVG arrow */
+         background-repeat: no-repeat;
+         background-position: right 10px top 50%, 0 0;
+         background-size: 12px auto, 100%;
+     }
+     body.dark-theme .comparison-setup-form select {
+          background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23bbb%22%20d%3D%22M287%2C114.7L159.2%2C7c-3.8-3.8-10.2-3.8-14%2C0L5.4%2C114.7c-3.8%2C3.8-3.8%2C10.2%2C0%2C14s10.2%2C3.8%2C14%2C0l132-132l130%2C130c3.8%2C3.8%2C10.2%2C3.8%2C14%2C0S290.8%2C118.5%2C287%2C114.7z%22%2F%3E%3C%2Fsvg%3E'); /* Lighter arrow for dark theme */
+         background-color: rgba(255,255,255,0.05);
+     }
+     .comparison-setup-form select:disabled {
+         opacity: 0.7;
+         cursor: not-allowed;
+     }
+
+     #generate-comparison-btn {
+        padding: 10px 25px;
+        background-color: var(--bar-a-color);
+        color: white;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 15px;
+        font-weight: 600;
+        transition: background-color 0.2s ease, transform 0.1s ease;
+     }
+     #generate-comparison-btn:hover {
+         background-color: #1565C0; /* Darker blue */
+         transform: translateY(-1px); /* Subtle lift effect */
+     }
+
+     .comparison-table {
+         margin-top: 20px;
+     }
+     .comparison-table th, .comparison-table td {
+         border: none; /* Remove internal borders for comparison */
+     }
+     .comparison-table tbody td {
+         vertical-align: middle; /* Center text vertically */
+     }
+
+     .comparison-table .metric-cell {
+        font-weight: 600;
+        text-align: center; /* Metric labels centered */
+        min-width: 120px; /* Ensure metric column has some width */
+        background-color: rgba(0,0,0,0.03); /* Subtle background for metric column */
+     }
+
+     .bar-wrapper {
+         position: relative;
+         height: 25px; /* Height for the bars */
+         background-color: var(--progress-bar-bg); /* Background track */
+         border-radius: 4px;
+         overflow: hidden;
+     }
+    .bar-cell-a .bar { background-color: var(--bar-a-color); }
+    .bar-cell-b .bar { background-color: var(--bar-b-color); }
+
+     .bar {
+         height: 100%;
+         display: flex;
+         align-items: center;
+         padding: 0 8px; /* Padding inside the bar */
+         font-size: 12px;
+         font-weight: 600;
+         color: var(--text-on-bar); /* Text color on the bar fill */
+         transition: width 0.5s ease-in-out; /* Animate width changes */
+          text-shadow: 1px 1px 2px rgba(0,0,0,0.3); /* Text shadow for readability */
+     }
+
+     .bar-cell-b .bar {
+         justify-content: flex-end; /* Align text to the right for group B bars */
+         padding: 0 8px;
+     }
+     .bar-cell-a, .bar-cell-b {
+         width: 45%; /* Each bar cell takes up 45% */
+     }
+
+    /* --- Modal Styles --- */
+    .modal-overlay {
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background-color: rgba(0,0,0,0.7); /* Darker overlay */
+      z-index: 1000; display: flex; /* Use flex for centering */
+      align-items: center; justify-content: center;
+      /* Animation for overlay */
+      opacity: 0;
+      visibility: hidden; /* Use visibility for better control than just opacity */
+      transition: opacity 0.3s ease, visibility 0s ease 0.3s; /* Opacity changes over 0.3s, visibility changes after 0.3s delay */
+    }
+     .modal-overlay.open { /* Class added by JS when modal is shown */
+         opacity: 1;
+         visibility: visible;
+         transition: opacity 0.3s ease, visibility 0s ease 0s; /* No delay when opening */
+     }
+
+
+    .modal-content {
+      background-color: var(--bg-glass-content);
+      backdrop-filter: blur(18px); /* Stronger blur for modals */
+      -webkit-backdrop-filter: blur(18px);
+      color: var(--text-main);
+      border: var(--border-glass);
+      border-radius: 12px; /* More rounded corners */
+      box-shadow: 0 10px 40px rgba(0,0,0,0.4); /* Stronger shadow */
+      width: 95%; /* Slightly wider modal on larger screens */
+      max-width: 800px;
+      max-height: 90vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden; /* Hide content until ready */
+      /* Animation for modal content */
+       transform: scale(0.95);
+       opacity: 0;
+       transition: transform 0.3s ease, opacity 0.3s ease;
+    }
+    .modal-overlay.open .modal-content { /* Apply animation when modal-overlay has .open */
+        transform: scale(1);
+        opacity: 1;
+    }
+
+
+    .modal-header { 
+        padding: 12px 15px; 
+        border-bottom: 1px solid var(--border-light); 
+        display: flex; justify-content: space-between; 
+        align-items: center; 
+        background-color: rgba(0,0,0,0.03); /* Subtle header background */
+        flex-shrink: 0;
+    }
+    .modal-header h4 { margin: 0; font-size: 16px; font-weight: 600;} /* Larger, bolder modal title */
+    .modal-close-btn { 
+        background: none; border: none; 
+        font-size: 24px; /* Larger close button */
+        line-height: 1; /* Ensures centering */
+        cursor: pointer; 
+        color: var(--text-light); 
+        transition: color 0.2s ease; 
+        padding: 0 5px; /* Clickable area padding */
+    }
+    .modal-close-btn:hover { color: var(--text-main); }
+    .modal-body { padding: 15px; overflow-y: auto; flex-grow: 1; } /* Takes remaining space */
+
+    .financer-cards-container { 
+        display: grid; 
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); /* Slightly larger cards */
+        gap: 15px; /* More space between cards */
+        margin-bottom: 20px;
+        padding-bottom: 15px;
+        border-bottom: 1px solid var(--border-light);
+    }
+    .financer-card { 
+        border: 1px solid var(--border-light); 
+        border-radius: 8px; /* More rounded */
+        padding: 12px; /* More padding */
+        text-align: center; 
+        background-color: rgba(0,0,0,0.06); /* Subtle card background */
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        transition: transform 0.2s ease; /* Hover animation */
+    }
+    .financer-card:hover { transform: translateY(-2px); } /* Lift effect on hover */
+
+    .financer-card-name { 
+        font-size: 1em; font-weight: bold; 
+        margin-bottom: 8px; 
+        color: var(--bar-a-color); /* Highlight name color */
+    }
+    .financer-card-metric { 
+        font-size: 10px; /* Smaller metric label */
+        color: var(--text-light); 
+        display: block; /* Ensure metric is on its own line */
+        margin-top: 5px;
+    }
+    .financer-card-value { 
+        font-size: 16px; /* Larger value */
+        font-weight: 600; 
+        color: var(--text-main); /* Value uses main text color */
+         margin-top: 3px;
+         font-family: monospace, sans-serif; /* Monospace for numbers */
+    }
+
+    .idea-box-btn { 
+        display: block; width: 80%; margin: 20px auto; padding: 10px; /* Larger button, more space */
+        background-color: var(--progress-bar-fill); /* Blue button color */
+        color: white; border: none; 
+        border-radius: 5px; font-size: 15px; cursor: pointer; 
+        text-align: center; transition: background-color 0.2s ease, transform 0.1s ease;
+        font-weight: 600;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    }
+    .idea-box-btn:hover { background-color: #0D47A1; transform: translateY(-1px);} /* Darker blue on hover, lift effect */
+    .idea-box-btn:active { transform: translateY(0); box-shadow: 0 1px 3px rgba(0,0,0,0.2);} /* Press down effect */
+
+
+    .sales-drive-section { 
+        margin-top: 20px; 
+        padding-top: 20px;
+        border-top: 1px solid var(--border-light); /* Separator line */
+    }
+     .sales-drive-section h4 {
+         margin: 0 0 15px 0;
+         font-size: 1em;
+         font-weight: 600;
+         color: var(--text-main);
+     }
+
+    .sales-drive-section details { 
+        border: 1px solid var(--border-light); 
+        border-radius: 8px; 
+        margin-bottom: 10px; /* Space between FAQ items */
+        background-color: rgba(0,0,0,0.03);
+         transition: background-color 0.2s ease;
+    }
+     .sales-drive-section details:hover {
+         background-color: rgba(0,0,0,0.05);
+     }
+     .sales-drive-section details[open] {
+          background-color: rgba(0,0,0,0.08);
+     }
+
+
+    .sales-drive-section summary { 
+        padding: 10px 15px; /* More padding */
+        cursor: pointer; font-weight: bold; 
+        background-color: rgba(0,0,0,0.05); 
+        font-size: 0.95em; /* Slightly larger */
+        outline: none; /* Remove default outline */
+         transition: background-color 0.2s ease;
+     }
+     .sales-drive-section summary:hover { background-color: rgba(0,0,0,0.08); }
+     .sales-drive-section summary::-webkit-details-marker { display: none; } /* Hide default arrow */
+     .sales-drive-section summary::before { /* Custom arrow */
+         content: '▶';
+         margin-right: 10px;
+         display: inline-block;
+         transition: transform 0.2s ease;
+          color: var(--text-light); /* Arrow color */
+     }
+     .sales-drive-section details[open] summary::before {
+         transform: rotate(90deg);
+     }
+
+
+    .sales-drive-section .faq-answer { 
+        padding: 10px 15px 15px 15px; /* Padding inside answer */
+        border-top: 1px dashed var(--border-light); /* Dashed separator */
+        font-style: italic; 
+        color: var(--text-light); 
+        font-size: 11px; /* Maintain small font for answers */
+        line-height: 1.5; /* Better readability */
+    }
+    
+    .idea-modal-content { 
+        line-height: 1.6;
+        font-size: 14px; /* Base font size for modal body */
+     }
+    .idea-modal-content hr {
+        border: none;
+        border-top: 1px dashed var(--border-light);
+        margin: 15px 0;
+    }
+    .idea-modal-content ul {
+        list-style: none;
+        padding: 0;
+        margin: 15px 0;
+    }
+    .idea-modal-content li {
+        margin-bottom: 8px;
+         padding-left: 1em;
+         position: relative;
+    }
+     .idea-modal-content li::before {
+         content: '- '; /* Simple list marker */
+         position: absolute;
+         left: 0;
+         color: var(--text-light);
+     }
+
+    .idea-modal-content .metric { 
+        font-weight: 600; 
+        color: var(--text-main); 
+        margin-right: 5px;
+    }
+    .idea-modal-content .value { 
+        font-size: 1em; 
+        color: var(--progress-bar-fill); /* Highlight value */
+        font-family: monospace, sans-serif;
+    }
+
+    /* Progress Bar */
+    .progress-bar-container { 
+        position: relative; 
+        height: 22px; /* Slightly taller bar */
+        background-color: var(--progress-bar-bg); 
+        border-radius: 4px; 
+        overflow: hidden;
+        display: flex; /* Use flex to align text */
+        align-items: center;
+    }
+    .progress-bar-fill { 
+        height: 100%; 
+        background-color: var(--progress-bar-fill); 
+        transition: width 0.5s ease-in-out; 
+        display: flex; /* Needed for text inside fill */
+        align-items: center; 
+        justify-content: center;
+        padding: 0 5px; /* Small padding */
+        position: relative; /* Ensure it clips text inside */
+    }
+     /* Hide default text and use span for more control */
+     .progress-bar-container .progress-bar-text {
+         position: absolute; /* Position over the bar */
+         top: 0; left: 0; right: 0; bottom: 0;
+         display: flex;
+         align-items: center;
+         justify-content: center;
+        font-size: 10px; 
+        font-weight: 500; 
+         white-space: nowrap; /* Prevent text wrapping */
+         z-index: 2; /* Ensure text is above the fill */
+         color: var(--text-main); /* Default color outside fill */
+         transition: color 0.3s ease;
+     }
+     .progress-bar-container.over-50 .progress-bar-text {
+         /* Style text when progress is over 50% */
+          color: var(--text-on-bar);
+           text-shadow: 1px 1px 2px rgba(0,0,0,0.4);
+     }
+
+
+  </style>
+</head>
+<body>
+
+  <!-- Main Dashboard Structure -->
+  <div class="sidebar glass-effect" id="main-sidebar">
+    <div class="sidebar-header">Store & Manager Selection</div>
+    <div class="hierarchy-container" id="hierarchy-container"></div>
+  </div>
+  <div class="top-menu glass-effect" id="main-top-menu">
+      <div class="top-menu-left">
+        <div id="transactions-btn">Transactions</div>
+        <div id="reports-menu"> Reports
+            <div class="dropdown glass-effect">
+                <div id="live-sales-report-btn">Live Sales Report</div>
+                <div id="comparison-report-btn">Comparison Report</div>
+                <div id="tva-report-btn">T vs A Report</div>
+            </div>
+        </div>
+        <div id="mapping-btn">Mapping</div>
+        <div id="accounts-btn">Accounts</div>
+      </div>
+      <!-- Refresh Button -->
+      <div class="top-menu-right">
+        <div id="refresh-dashboard-btn" title="Refresh Data">
+             <svg class="top-menu-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                <path d="M17.65 6.35C16.2 5.65 14.27 5 12 5c-4.18 0-7.85 2.61-9.25 6.01-1.38 3.37-0.73 7.03 1.74 9.69-.14-.46-.26-.93-.26-1.43 0-1.11.41-2.13 1.1-2.96.22-.25.45-.48.7-.71l1.05-.74c.52-.37.78-.94.74-1.46-.04-.52-.31-.99-.78-1.35-1.75-1.38-3.22-2.52-4.08-2.91-.46-.21-.86-.36-1.27-.47.09.16.19.32.27.49.23.47.48.94.75 1.41-.82.36-1.54 1.05-2.08 1.88.44-.52 1.07-.94 1.74-1.19.35-.13.72-.22 1.09-.29l.54-.06c.84-.07 1.66-.11 2.46-.11 3.22 0 6.13 1.38 8.18 3.57.78.83 1.37 1.86 1.64 2.94zm-6.45 7.1c-2.18 0-4 1.79-4 4s1.79-4 4-4 4 1.79 4 4-1.79 4-4 4zm0-6c-1.59 0-2.91 1.09-3.21 2.51-.09.43-.01.87.22 1.25.23.33.53.59.86.78.24.14.51.23.81.26.16.01.32.01.47.01.99 0 1.93-.36 2.74-.99.22-.18.43-.38.62-.6.29-.34.53-.74.67-1.16.13-.4.15-.82.09-1.22-.14-.83-.54-1.59-1.1-2.24z"/>
+            </svg>
+        </div>
+        <div id="theme-toggle">
+            <svg id="theme-icon-sun" class="top-menu-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 7c-2.76 0-5 2.24-5 5s2.24 5 5 5 5-2.24 5-5-2.24-5-5-5zM2 12c0 .55.45 1 1 1h1c.55 0 1-.45 1-1s-.45-1-1-1H3c-.55 0-1 .45-1 1zm18 0c0 .55.45 1 1 1h1c.55 0 1-.45 1-1s-.45-1-1-1h-1c-.55 0-1 .45-1 1zm-8-8c.55 0 1-.45 1-1V2c0-.55-.45-1-1-1s-1 .45-1 1v1c0 .55.45 1 1 1zm0 16c.55 0 1-.45 1-1v-1c0-.55-.45-1-1-1s-1 .45-1 1v1c0 .55.45 1 1 1zM5.64 5.64c.39.39 1.02.39 1.41 0s.39-1.02 0-1.41L5.64 2.81c-.39-.39-1.02-.39-1.41 0s-.39 1.02 0 1.41l1.41 1.42zm12.72 12.72c.39.39 1.02.39 1.41 0s.39-1.02 0-1.41l-1.41-1.41c-.39-.39-1.02-.39-1.41 0s-.39 1.02 0 1.41l1.41 1.41zM4.22 18.36c.39.39 1.02.39 1.41 0l1.41-1.41c.39-.39.39-1.02 0-1.41s-1.02-.39-1.41 0L2.81 16.95c-.39.39-.39 1.02 0 1.41zm15.56-12.73c.39-.39.39-1.02 0-1.41l-1.41-1.41c-.39-.39-1.02-.39-1.41 0s-.39 1.02 0 1.41l1.41 1.41c.39.39 1.02.39 1.41 0z"/></svg>
+            <svg id="theme-icon-moon" class="top-menu-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" style="display: none;"><path d="M11.1 12.08c-2.33-4.51-.5-8.48.53-10.07-1.7.21-3.41.8-4.99 1.95C2.45 8.1 1.4 13.57 3.5 18.14c2.83 6.22 11.2 5.64 14.88-1.43-2.11 2.33-6.21 2.92-9.27 1.37z"/></svg>
+        </div>
+        <div id="profile-menu">
+            <svg class="top-menu-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+            <div class="dropdown glass-effect">
+                <div id="profile-btn">My Profile</div><div id="settings-btn">Settings</div><div id="logout-btn">Logout</div>
+            </div>
+        </div>
+      </div>
+  </div>
+  <!-- Content Area: Will display reports or placeholders -->
+  <div class="content" id="content-area"></div>
+
+  <!-- Modals -->
+  <div class="modal-overlay" id="tva-detail-modal">
+    <div class="modal-content"><div class="modal-header"><h4 id="tva-modal-title">Branch Details</h4><button class="modal-close-btn" data-target="tva-detail-modal">×</button></div><div class="modal-body" id="tva-modal-body"></div></div>
+  </div>
+  <div class="modal-overlay" id="idea-box-modal">
+      <div class="modal-content" style="max-width: 500px;"><div class="modal-header"><h4 id="idea-modal-title">Projection & Run Rate</h4><button class="modal-close-btn" data-target="idea-box-modal">×</button></div><div class="modal-body idea-modal-content" id="idea-modal-body"></div></div>
+  </div>
+<script>
+document.addEventListener('DOMContentLoaded', async () => { // Use async for fetch operations
+
+    /*
+     --- GOOGLE SHEET CSV EXPORT URLs ---
+     !!! IMPORTANT: Replace the placeholder URLs below with the actual CSV export URLs
+         obtained from your Google Sheets by publishing them (File > Share > Publish to web).
+         Ensure the specific sheet tabs are selected and the format is CSV.
+         The `gid=` parameter is crucial and must match the target sheet.
+         Example Structure:
+         'https://docs.google.com/spreadsheets/d/YOUR_SHEET_ID/export?format=csv&gid=SHEET_GID_FOR_TARGETS'
+    */
+    const TARGETS_CSV_EXPORT_URL_PLACEHOLDER = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTsoMxFWXk2YcqwV_EwVa8JlTAVEOFG0JZ55IA_K9_1DiOzitcUekUcMHdMpS07xaHDMMXDYfYLMj7L/pub?gid=0&single=true&output=csv'; // Target data sheet (GID 0 assumed)
+    const ACHIEVEMENTS_CSV_EXPORT_URL_PLACEHOLDER = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTsoMxFWXk2YcqwV_EwVa8JlTAVEOFG0JZ55IA_K9_1DiOzitcUekUcMHdMpS07xaHDMMXDYfYLMj7L/pub?gid=1402716944&single=true&output=csv'; // Achievement data sheet (GID 1 assumed)
+
+    /*
+     --- MAPPING DATA (Static) ---
+     Contains the fixed hierarchy of Stores, GMs, and ASMs. This data is not fetched.
+    */
+    const MAPPING_DATA = [ 
+      { gm: 'RAZIK', asm: 'AZEEZ', branch: 'AKM-01 (Arakkonam, Vellore)' }, { gm: 'RAZIK', asm: 'SATHISH', branch: 'AMB-1 (Ambu, Vellore)' }, { gm: 'NADESAN', asm: 'BABU', branch: 'ANR-01 (Annur, Coimbatore)' }, 
+      { gm: 'RAZIK', asm: 'SATHISH', branch: 'ARCOT-01 (Arcot, Vellore)' }, { gm: 'RAZIK', asm: 'SATHISH', branch: 'ARN-01 (Arani, Tiruvanamalai)' }, { gm: 'NADESAN', asm: 'SABARI', branch: 'AV-01 (Avinashi, Coimbatore)' }, 
+      { gm: 'SIKKANDAR', asm: 'KIYAJUDEEN', branch: 'BTL-01 (Batlagundu , Dindigul)' }, { gm: 'RAZIK', asm: 'SILAMBU', branch: 'CGP-1 (Chengalpattu, Kanchipuram)' }, 
+      { gm: 'RAZIK', asm: 'DEVAGURU', branch: 'CH-01 (Koyembedu, Chennai)' }, { gm: 'RAZIK', asm: 'ARUN', branch: 'CH-02 (ECR Road, Chennai)' }, { gm: 'RAZIK', asm: 'ARUN', branch: 'CH-03 (Velechery (100 Feet), Chennai))' }, 
+      { gm: 'RAZIK', asm: 'ARUN', branch: 'CH-04 (Madipakkam, Chennai)' }, { gm: 'RAZIK', asm: 'DEVAGURU', branch: 'CH-05 (Pallavaram, Chennai)' }, { gm: 'RAZIK', asm: 'DEVAGURU', branch: 'CH-06 (Kumananchavadi, Chennai)' }, 
+      { gm: 'RAZIK', asm: 'DEVAGURU', branch: 'CH-07 ( Avadi , Chennai )' }, { gm: 'RAZIK', asm: 'DEVAGURU', branch: 'CH-08 (West Mambalam,  Chennai)' }, { gm: 'RAZIK', asm: 'RAMESH', branch: 'CH-09 (Kodambakkam, Chennai)' }, 
+      { gm: 'RAZIK', asm: 'ARUN', branch: 'CH-10 (Medavakkam, Chennai)' }, { gm: 'RAZIK', asm: 'VEEMA RAJA', branch: 'CH-12 (Porur, Chennai)' }, { gm: 'RAZIK', asm: 'DEVAGURU', branch: 'CH-13 (OMR, Chennai)' }, 
+      { gm: 'RAZIK', asm: 'AZEEZ', branch: 'CH-15 (Ambattur Village, Tiruvallur)' }, { gm: 'RAZIK', asm: 'VEEMA RAJA', branch: 'CH-17 (M.G.R. Nagar, Chennai)' }, { gm: 'RAZIK', asm: 'RAMESH', branch: 'CH-18 (T.Nagar, Chennai)' }, 
+      { gm: 'RAZIK', asm: 'ARUN', branch: 'CH-19 (Mogappair, Chennai)' }, { gm: 'RAZIK', asm: 'RAMESH', branch: 'CH-20 (Teynampet West, Chennai)' }, { gm: 'RAZIK', asm: 'SILAMBU', branch: 'CH-21 (Kelambakkam, Chennai)' }, 
+      { gm: 'RAZIK', asm: 'VEEMA RAJA', branch: 'CH-22 (Anna Nagar, Chennai)' }, { gm: 'RAZIK', asm: 'AZEEZ', branch: 'CH-23 (Perambur, Chennai)' }, { gm: 'RAZIK', asm: 'SILAMBU', branch: 'CH-26 (Navalur, Chennai)' }, 
+      { gm: 'RAZIK', asm: 'DEVAGURU', branch: 'CH-30 (T.Nagar-2, Chennai)' }, { gm: 'RAZIK', asm: 'VEEMA RAJA', branch: 'CH-36 (Old Washermenpet, Chennai)' }, { gm: 'RAZIK', asm: 'AZEEZ', branch: 'CH-37 (Redhills , Thiruvallur)' }, 
+      { gm: 'RAZIK', asm: 'VEEMA RAJA', branch: 'CH-38 (Ashok Nagar, Chennai)' }, { gm: 'NADESAN', asm: 'ANSAR', branch: 'CM-01 (Kuniamuthur-2, Coimbatore)' }, { gm: 'NADESAN', asm: 'BALA', branch: 'CM-02 (RS Puram, Coimbatore)' }, 
+      { gm: 'NADESAN', asm: 'BABU', branch: 'CM-03 (Ondipudur, Coimbatore)' }, { gm: 'NADESAN', asm: 'BABU', branch: 'CM-04 (Gandhipuram,Coimbatore)' }, { gm: 'NADESAN', asm: 'BABU', branch: 'CM-05 (Saravanampatti, Coimbatore)' }, 
+      { gm: 'NADESAN', asm: 'ANSAR', branch: 'CM-06 (Singanallur, Coimbatore)' }, { gm: 'NADESAN', asm: 'ANSAR', branch: 'CM-07 (Gandhipuram, Coimbatore)' }, { gm: 'NADESAN', asm: 'BALA', branch: 'CM-08 (GP Signal,Coimbatore)' }, 
+      { gm: 'NADESAN', asm: 'SHERIFF', branch: 'CM-09 (Brooke Fields, Coimbatore)' }, { gm: 'NADESAN', asm: 'BABU', branch: 'CM-10 (Vadavalli, Coimbatore)' }, { gm: 'NADESAN', asm: 'BABU', branch: 'CM-11 (100 Feet Road, Coimbatore)' }, 
+      { gm: 'NADESAN', asm: 'NIRMAL', branch: 'CM-12 (R S.Puram, Coimbatore)' }, { gm: 'NADESAN', asm: 'ANSAR', branch: 'CM-13 (Vellakinar pirivu, Coimbatore)' }, { gm: 'NADESAN', asm: 'NIRMAL', branch: 'CM-14 (Thudiyalur, Coimbatore)' }, 
+      { gm: 'NADESAN', asm: 'ANSAR', branch: 'CM-15 (P.N.Palayam, Coimbatore)' }, { gm: 'NADESAN', asm: 'ANSAR', branch: 'CM-17 (Lakshmi Mills Signal, Coimbatore)' }, { gm: 'NADESAN', asm: 'SHERIFF', branch: 'CM-18 (Hope College, Coimbatore)' }, 
+      { gm: 'NADESAN', asm: 'BALA', branch: 'CM-19 (Sundarapuram, Coimbatore)' }, { gm: 'NADESAN', asm: 'BALA', branch: 'CM-20 (Saravanampatti, Coimbatore)' }, { gm: 'NADESAN', asm: 'BABU', branch: 'CM-21 (Sulur, Coimbatore)' }, 
+      { gm: 'NADESAN', asm: 'NIRMAL', branch: 'CM-22 (P.N.Palayam, Coimbatore)' }, { gm: 'NADESAN', asm: 'SHERIFF', branch: 'CM-24 (Ramanathapuram,Coimbatore)' }, { gm: 'NADESAN', asm: 'NIRMAL', branch: 'CM-25 (100Ft Road, Coimbatore)' }, 
+      { gm: 'RAZIK', asm: 'MARUTHAN', branch: 'CUD-01 (Cuddalore)' }, { gm: 'SIKKANDAR', asm: 'GANI', branch: 'DG-01 (AMC Road, Dindigul)' }, { gm: 'SIKKANDAR', asm: 'GANI', branch: 'DG-02 (Salai Road, Dindigul)' }, 
+      { gm: 'SIKKANDAR', asm: 'GANI', branch: 'DG-03 (Bus Stand , Dindigul)' }, { gm: 'KL - SHAHID', asm: 'SHIHAB', branch: 'EDP-01 (Edappal Malapuram)' }, { gm: 'SIKKANDAR', asm: 'MOORTHI', branch: 'ER-01 (Mettur Road, Erode)' }, 
+      { gm: 'SIKKANDAR', asm: 'MOORTHI', branch: 'ER-02 (Gandhiji Road,Erode)' }, { gm: 'SIKKANDAR', asm: 'MOORTHI', branch: 'ER-03 (Mettur Road, Erode)' }, { gm: 'SIKKANDAR', asm: 'MOORTHI', branch: 'ER-04 (Mettur Road, Erode)' }, 
+      { gm: 'SIKKANDAR', asm: 'GOB-01 (Gobichettipalayam, Erode)' }, { gm: 'SIKKANDAR', asm: 'SARAVANAN', branch: 'KAL-01 ( Kallakurichi )' }, { gm: 'SIKKANDAR', asm: 'KIYAJUDEEN', branch: 'MD-01 (Goripalayam, Madurai)' }, 
+      { gm: 'SIKKANDAR', asm: 'GANI', branch: 'MD-02 (Simakkal, Madurai)' }, { gm: 'SIKKANDAR', asm: 'KIYAJUDEEN', branch: 'MD-03 (Nethaji Road, Madurai)' }, { gm: 'SIKKANDAR', asm: 'GANI', branch: 'MD-04(Anna Nagar, Madurai)' }, 
+      { gm: 'SIKKANDAR', asm: 'KIYAJUDEEN', branch: 'MD-05 (Vishal De Mall, Madurai)' }, { gm: 'SIKKANDAR', asm: 'KIYAJUDEEN', branch: 'NGK-1 (Nagercoil, Nagercoil)' }, { gm: 'RAZIK', asm: 'SATHISH', branch: 'NVL-01(Neyveli)' }, 
+      { gm: 'NADESAN', asm: 'SHERIFF', branch: 'OT-01 (Ooty, Ooty)' }, { gm: 'NADESAN', asm: 'SHERIFF', branch: 'OT-02 (Ooty, Ooty)' }, { gm: 'KL - SHAHID', asm: 'SHIHAB', branch: 'OTM-01(OTTAPALAM, Palakkad)' }, 
+      { gm: 'SIKKANDAR', asm: 'SURESH', branch: 'PAT-01 (Chinnaiah Street, Pattukkottai)' }, { gm: 'RAZIK', asm: 'MARUTHAN', branch: 'PDY-01 (Puducherry-01)' }, { gm: 'KL - SHAHID', asm: 'FAIZAL', branch: 'PKD-01(Sulthanpet,Palakkad)' }, 
+      { gm: 'KL - SHAHID', asm: 'SHIHAB', branch: 'PKD-03(Byepass Road,Palakkad)' }, { gm: 'KL - SHAHID', asm: 'FAIZAL', branch: 'PKD-04(Olavakkode, Palakkad)' }, { gm: 'SIKKANDAR', asm: 'SURESH', branch: 'PLN-01 (Palani, Palani)' }, 
+      { gm: 'NADESAN', asm: 'SABARI', branch: 'POL-1 (Raja Mill Road, Pollachi)' }, { gm: 'RAZIK', asm: 'MARUTHAN', branch: 'PRT-01 (PANRUTI)' }, { gm: 'KL - SHAHID', asm: 'SHIHAB', branch: 'PTB-01 (Pattambi, Palakkad)' }, 
+      { gm: 'SIKKANDAR', asm: 'GANI', branch: 'RMD-01 (Ramanathapuram)' }, { gm: 'SIKKANDAR', asm: 'SARAVANAN', branch: 'SK-01 (Sankiri, Sankiri)' }, { gm: 'SIKKANDAR', asm: 'SARAVANAN', branch: 'SLM-01 (Meyyanur, Salem)' }, 
+      { gm: 'SIKKANDAR', asm: 'SARAVANAN', branch: 'SLM-02 (Gugai, Salem)' }, { gm: 'SIKKANDAR', asm: 'SARAVANAN', branch: 'SLM-03 ( Hasthampatti, salem)' }, { gm: 'SIKKANDAR', asm: 'SARAVANAN', branch: 'SLM-04 (4 Roads, Salem)' }, 
+      { gm: 'SIKKANDAR', asm: 'KIYAJUDEEN', branch: 'TENI-01 (Theni)' }, { gm: 'SIKKANDAR', asm: 'SARAVANAN', branch: 'TG-01 (TG-01, Tiruchengode)' }, { gm: 'SIKKANDAR', asm: 'SURESH', branch: 'TNJ-01 (Thanjavur,New Bus Stand)' }, 
+      { gm: 'SIKKANDAR', asm: 'SURESH', branch: 'TNJ-02 (Thanjavur,Old Bus stand)' }, { gm: 'NADESAN', asm: 'SABARI', branch: 'TPR-01 (Tirupur - 1, Tirupur)' }, { gm: 'NADESAN', asm: 'SABARI', branch: 'TPR-02 (Tirupur - 2, Tirupur)' }, 
+      { gm: 'NADESAN', asm: 'SABARI', branch: 'TPR-03 (Avinashi Road, Tirupur)' }, { gm: 'NADESAN', asm: 'SABARI', branch: 'TPR-04 (Gobald Complex, Tirupur)' }, { gm: 'SIKKANDAR', asm: 'SURESH', branch: 'TRY-01 (Cantonment, Trichy)' }, 
+      { gm: 'SIKKANDAR', asm: 'SURESH', branch: 'TRY-02 (Chathiram Bus Stand)' }, { gm: 'SIKKANDAR', asm: 'SURESH', branch: 'TRY-03 (Byepass Road)' }, { gm: 'RAZIK', asm: 'SATHISH', branch: 'TVM-01 (Tiruvannamalai, Tiruvannamalai)' }, 
+      { gm: 'RAZIK', asm: 'AZEEZ', branch: 'TVR-2 (Kakkalur, Thiruvallur)' }, { gm: 'NADESAN', asm: 'SABARI', branch: 'UDP-01 (Udumalpet, Palani)' }, 
+      { gm: 'KL - SHAHID', asm: 'FAIZAL', branch: 'VKC-01(Wadakkanchery, Palakkad)' }, { gm: 'SIKKANDAR', asm: 'MOORTHI', branch: 'VLK-01 (Vellakovil, Vellakovil)' }, { gm: 'RAZIK', asm: 'SATHISH', branch: 'VPM-01 ( Nehruji Road, Viluppuram)' } 
+    ];
+    
+    /* --- Global Data Stores --- */
+    let allSalesData = []; // Stores simulated sales data
+    let tvaTargets = [];   // Stores fetched (or mocked) TvsA target data
+    let tvaAchievements = []; // Stores fetched (or mocked) TvsA achievement data
+    let uniqueData = {}; // Stores unique values for comparison report filters (GM, ASM, Month)
+    let activeView = 'live-sales-report'; // Tracks the currently displayed report view
+
+    /* --- UI Element References --- */
+    const mainSidebar = document.getElementById('main-sidebar');
+    const mainTopMenu = document.getElementById('main-top-menu');
+    const contentArea = document.getElementById('content-area');
+    const hierarchyContainer = document.getElementById('hierarchy-container');
+
+    /*
+     --- CSV FETCHING AND PARSING FUNCTIONS ---
+    */
+
+    // Basic CSV parser: Splits CSV string into an array of objects.
+    // Handles headers, normalizes them (lowercase, underscore spaces), and attempts numeric conversion.
+    function parseCsvData(csvString) {
+        const lines = csvString.split('\n').filter(line => line.trim() !== ''); // Split into lines, remove empty ones
+        if (lines.length < 2) { // Requires at least a header row and one data row
+            console.warn("CSV data is too short (less than 2 lines). Needs header + data.");
+            return []; 
+        }
+
+        const headersRaw = lines[0].split(',').map(header => header.trim()); // Get raw headers
+        // Normalize headers: lowercase, replace spaces with underscores, remove non-alphanumeric/underscore chars
+        const headers = headersRaw.map(header => header.toLowerCase().replace(/ /g, '_').replace(/[^a-z0-9_]/g, ''));
+        
+        const data = []; // Array to hold parsed row objects
+
+        // Process data rows
+        for (let i = 1; i < lines.length; i++) {
+            const values = lines[i].split(',').map(val => val.trim()); // Split line into values
+            
+            // Handle rows with fewer values than headers (e.g., due to trailing commas)
+            while(values.length < headers.length) values.push('');
+
+            // Basic validation: ensure value count matches header count before processing
+            if (values.length !== headers.length) { 
+                console.warn(`Skipping row ${i + 1} due to header/value mismatch. Headers: ${headers.length}, Values: ${values.length}. Row content: "${lines[i]}"`);
+                continue; // Skip this row
+            }
+
+            const rowObject = {};
+            for (let j = 0; j < headers.length; j++) {
+                let processedValue = values[j];
+                // Attempt numeric conversion if the value looks like a number
+                if (!isNaN(processedValue) && processedValue !== '') {
+                    processedValue = parseFloat(processedValue);
+                }
+                rowObject[headers[j]] = processedValue; // Assign value using the normalized header key
+            }
+            data.push(rowObject);
+        }
+        return data;
+    }
+
+    // Fetches data from a given URL, handles errors, and parses the response as CSV.
+    // Returns an empty array if fetching or parsing fails.
+    async function fetchCsvDataAndParse(url) {
+        try {
+            console.log(`Fetching data from: ${url}`);
+            const response = await fetch(url); // Fetch the CSV data
+            if (!response.ok) {
+                // Throw an error if the fetch response is not successful (e.g., 404, 500)
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            const csvString = await response.text(); // Get the response body as text
+            console.log(`Successfully fetched CSV.`);
+            return parseCsvData(csvString); // Parse the CSV string
+        } catch (error) {
+            // Log any errors encountered during fetch or parse
+            console.error(`Error fetching or parsing CSV from ${url}:`, error);
+            return []; // Return an empty array to indicate failure
+        }
+    }
+
+    // Generates mock data for TvsA if fetching from Google Sheets fails.
+    // This ensures the reports can still be displayed with sample data.
+    function getMockTvaData() {
+         const financers = ['bajaj', 'idfc', 'hdfc', 'hdb', 'tvs', 'brand_emi']; // List of known financers
+         // Generate mock target data
+         const mockTargets = MAPPING_DATA.map(s => ({ 
+             branch: s.branch, gm: s.gm, asm: s.asm,
+             fin_sale_count: Math.floor(Math.random()*80)+20, // Random count between 20-100
+             fin_sale_value: (Math.floor(Math.random()*15)+5)*100000, // Random value between 500,000 - 2,000,000
+             upi_value: (Math.floor(Math.random()*5)+2)*100000 // Random UPI value
+         }));
+         // Generate mock achievement data
+         const mockAchievements = MAPPING_DATA.map(s => {
+             let a = { branch: s.branch, gm: s.gm, asm: s.asm, financers: {}, total_fin_count: 0, total_fin_value: 0, upi_value: Math.floor(Math.random()*600000) };
+             financers.forEach(f => {
+                 const count = Math.floor(Math.random()*20), value = count * (Math.floor(Math.random()*10000)+10000); // Generate count and value
+                 if(count > 0 || value > 0) { // Only add financer if there's data
+                      a.financers[f] = { count: parseFloat(count.toFixed(2)) || 0, value: parseFloat(value.toFixed(2)) || 0 };
+                      a.total_fin_count += count; a.total_fin_value += value; // Accumulate totals
+                 }
+             });
+              a.total_fin_count = parseFloat(a.total_fin_count.toFixed(2)) || 0;
+              a.total_fin_value = parseFloat(a.total_fin_value.toFixed(2)) || 0;
+              a.upi_value = parseFloat(a.upi_value.toFixed(2)) || 0;
+
+             return a;
+         });
+         console.log("Generated mock TvsA data.");
+         return { targets: mockTargets, achievements: mockAchievements };
+    }
+
+    /*
+     --- MAIN DATA LOADING AND PROCESSING ---
+     Loads sales data (simulated) and attempts to fetch TvsA targets/achievements from Google Sheets.
+     Falls back to mock data if fetching or parsing fails.
+    */
+    async function loadAllDashboardData() {
+        console.log("Starting data loading process...");
+        
+        let fetchedTargets = [];
+        let fetchedAchievements = [];
+
+        // --- Fetch Targets CSV ---
+        // Try fetching targets data from the specified URL
+        fetchedTargets = await fetchCsvDataAndParse(TARGETS_CSV_EXPORT_URL_PLACEHOLDER);
+        
+        // --- Fetch Achievements CSV ---
+        // Try fetching achievements data from the specified URL
+        fetchedAchievements = await fetchCsvDataAndParse(ACHIEVEMENTS_CSV_EXPORT_URL_PLACEHOLDER);
+
+        // --- Process Fetched Data OR Fallback to Mock Data ---
+        if (fetchedTargets.length > 0 && fetchedAchievements.length > 0) {
+            console.log("Processing fetched TvsA data...");
+            
+            // Process Targets: Map fetched CSV data with MAPPING_DATA
+            tvaTargets = MAPPING_DATA.map(mapItem => {
+                // Find the corresponding target row from the fetched CSV data
+                const sheetTarget = fetchedTargets.find(sheetItem => sheetItem.branch_name === mapItem.branch);
+                if (!sheetTarget) { // Handle cases where branch is missing in CSV
+                    console.warn(`Target data missing in CSV for branch: ${mapItem.branch}. Using defaults (0).`);
+                    return { branch: mapItem.branch, gm: mapItem.gm, asm: mapItem.asm, fin_sale_count: 0, fin_sale_value: 0, upi_value: 0 };
+                }
+                // Map fields based on CSV headers. Adjust keys ('fin_sale_count_target', etc.) if your CSV headers differ.
+                return {
+                    branch: mapItem.branch,
+                    gm: mapItem.gm, 
+                    asm: mapItem.asm, 
+                    fin_sale_count: parseFloat(sheetTarget.fin_sale_count_target) || 0, // Use || 0 for safe parsing
+                    fin_sale_value: parseFloat(sheetTarget.fin_sale_value_target) || 0,
+                    upi_value: parseFloat(sheetTarget.upi_value_target) || 0
+                };
+            }).filter(item => item !== null); // Remove any potential null entries if map failed for some reason
+
+            // Process Achievements: Map fetched CSV data with MAPPING_DATA
+            tvaAchievements = MAPPING_DATA.map(mapItem => {
+                // Find the corresponding achievement row from the fetched CSV data
+                const sheetAch = fetchedAchievements.find(sheetItem => sheetItem.branch_name === mapItem.branch);
+                if (!sheetAch) { // Handle cases where branch is missing in CSV
+                    console.warn(`Achievement data missing in CSV for branch: ${mapItem.branch}. Using defaults.`);
+                    return { branch: mapItem.branch, gm: mapItem.gm, asm: mapItem.asm, financers: {}, total_fin_count: 0, total_fin_value: 0, upi_value: 0 };
+                }
+                
+                const financerFields = ['bajaj', 'idfc', 'hdfc', 'hdb', 'tvs', 'brand_emi']; // Known financers list
+                let financerData = {}; // Object to store financer-specific counts and values
+                let totalCount = 0;
+                let totalValue = 0;
+
+                // Iterate through known financers to extract data and calculate totals
+                financerFields.forEach(f => {
+                    const countKey = `${f}_count`; // Example: 'bajaj_count'
+                    const valueKey = `${f}_value`; // Example: 'bajaj_value'
+                    
+                    // Safely get values from the sheet data, defaulting to 0 if key doesn't exist or value is not a number
+                    const count = sheetAch.hasOwnProperty(countKey) ? parseFloat(sheetAch[countKey]) : 0;
+                    const value = sheetAch.hasOwnProperty(valueKey) ? parseFloat(sheetAch[valueKey]) : 0;
+                    
+                    const numericCount = !isNaN(count) ? count : 0;
+                    const numericValue = !isNaN(value) ? value : 0;
+
+                    // Only add financer data if count or value is present
+                    if (numericCount > 0 || numericValue > 0) { 
+                         financerData[f] = { count: numericCount, value: numericValue };
+                         totalCount += numericCount; // Accumulate totals
+                         totalValue += numericValue;
+                    }
+                });
+                
+                // Safely retrieve and parse the UPI achieved value
+                const upiAchievedValue = sheetAch.upi_value_achieved !== undefined ? parseFloat(sheetAch.upi_value_achieved) : 0;
+                const numericUpiValue = !isNaN(upiAchievedValue) ? upiAchievedValue : 0;
+
+                // Return the processed achievement data for the branch
+                return {
+                    branch: mapItem.branch,
+                    gm: mapItem.gm,
+                    asm: mapItem.asm,
+                    financers: financerData, // Object containing financer-specific data
+                    total_fin_count: totalCount, // Sum of all financer counts
+                    total_fin_value: totalValue, // Sum of all financer values
+                    upi_value: numericUpiValue // Achieved UPI value
+                };
+            }).filter(item => item !== null); // Remove any potentially malformed entries
+
+            console.log(`Successfully processed ${tvaTargets.length} TvsA Targets and ${tvaAchievements.length} TvsA Achievements from CSV.`);
+
+        } else {
+            // If CSV fetching or processing failed, use mock data as a fallback
+            console.warn("Failed to fetch or process CSV data. Falling back to mock data for TvsA report.");
+            const mockData = getMockTvaData(); // Get mock data
+            tvaTargets = mockData.targets;
+            tvaAchievements = mockData.achievements;
+        }
+
+        // --- Load Simulated Sales Data ---
+        // Sales data is simulated locally as it's not being fetched from external source here.
+        allSalesData = MAPPING_DATA.map((item, index) => {
+            const salesVal = Math.floor(Math.random() * 85e4) + 5e4; // Random sales value (50k - 900k)
+            const invoicesCount = Math.floor(Math.random() * 250) + 20; // Random invoice count (20 - 270)
+            return {
+                branch: item.branch, gm: item.gm, asm: item.asm,
+                salesValue: salesVal, invoices: invoicesCount,
+                avgBill: invoicesCount > 0 ? salesVal / invoicesCount : 0, // Calculated average bill, prevent division by zero
+                month: ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][index % 12] // Cycle through months
+            };
+        });
+        console.log(`Loaded ${allSalesData.length} simulated sales records.`);
+        
+        // Prepare unique data structures for filtering in the Comparison Report
+        prepareUniqueFilterData();
+
+        console.log("All dashboard data loaded and processed successfully.");
+    }
+
+    /* Prepares unique data for filters (e.g., unique GM names, ASM names, Branch names, Months) */
+    function prepareUniqueFilterData() {
+         const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+         uniqueData = {
+             gm: [...new Set(MAPPING_DATA.map(item => item.gm))].sort(), // Get unique GM names, sorted
+             asm: [...new Set(MAPPING_DATA.map(item => item.asm))].sort(), // Get unique ASM names, sorted
+             branch: [...new Set(MAPPING_DATA.map(item => item.branch))].sort(), // Get unique Branch names, sorted
+             month: months // Static list of months
+         };
+    }
+
+    /*
+     --- REFRESH FUNCTIONALITY ---
+    */
+
+    /* Refreshes all dashboard data by re-fetching from sources and re-rendering the active view. */
+    async function refreshDashboardDataAndView() {
+        const refreshBtn = document.getElementById('refresh-dashboard-btn');
+        // Temporarily change refresh button color to indicate loading state
+        const iconPath = refreshBtn.querySelector('svg path');
+        const originalIconColor = iconPath ? iconPath.style.fill : '';
+        if (iconPath) iconPath.style.fill = 'orange'; 
+
+        try {
+            console.log("Refreshing data...");
+            // Reload all data, including TvsA from Google Sheets (or mocks)
+            await loadAllDashboardData(); 
+            
+            // Re-render the currently active view
+            if (activeView === 'live-sales-report') {
+                // Re-apply current sidebar selections to Live Sales Report
+                updateReportFromSelection(); 
+            } else if (activeView === 'tva-report') {
+                // For TvsA, if the report table is already displayed, re-populate it.
+                // If upload view is still showing, nothing happens until file is processed.
+                const tvaReportMainView = document.getElementById('tva-report-main-view');
+                if (tvaReportMainView && tvaReportMainView.style.display === 'flex') {
+                    updateTvaReportFromSelection(); // Re-populate the table with refreshed data
+                }
+                // Comparison Report is not auto-regenerated, user must click 'Generate Report'.
+            }
+            
+            console.log("Dashboard data and active view refreshed successfully.");
+
+        } catch (error) {
+            // Log any errors encountered during the refresh process
+            console.error("Error during data refresh:", error);
+            // Optionally, display an error message to the user here (e.g., toast notification)
+        } finally {
+            // Reset the refresh button color after completion or error
+             if (iconPath) iconPath.style.fill = ''; // Revert to CSS variable color
+        }
+    }
+
+    /* Sets up the refresh button in the top menu bar */
+    function setupRefreshButton() {
+         // The button and SVG are already in the HTML structure.
+         // Just add the click listener.
+         const refreshButton = document.getElementById('refresh-dashboard-btn');
+         if (refreshButton) {
+             refreshButton.addEventListener('click', refreshDashboardDataAndView);
+         }
+    }
+
+    /*
+     --- INITIALIZATION ---
+     This function orchestrates the setup of the dashboard application.
+     It loads data, configures UI elements, and sets default states.
+    */
+    async function initializeApp() {
+        // 1. Apply theme preference from localStorage (if any)
+        applyInitialTheme();
+
+        // 2. Load all necessary data (Sales data simulated, TvsA data fetched from Google Sheets or mock)
+        await loadAllDashboardData();
+        
+        // 3. Prepare unique data structures for comparison report filters (e.g., unique GM names)
+        // prepareUniqueFilterData(); // Already called inside loadAllDashboardData now
+
+        // 4. Populate the sidebar with the GM > ASM > Branch hierarchy
+        populateHierarchySidebar(); 
+
+        // 5. Make the main dashboard UI (sidebar, top menu, content area) visible
+        // The display property is handled by CSS initially, only transition background
+        mainSidebar.style.display = 'flex';
+        mainTopMenu.style.display = 'flex';
+        contentArea.style.display = 'block';
+        document.body.style.overflow = 'hidden'; // Prevent default page scrollbars
+
+        // 6. Set the default active view and highlight the corresponding top menu item
+        activeView = 'live-sales-report'; // Start with Live Sales Report view
+        // Highlight done automatically by the click listener after default selection logic
+        
+        // 7. Set up all event listeners for dashboard interactivity
+        setupEventListeners();
+
+        // 8. Add the refresh button functionality
+        setupRefreshButton();
+
+        // 9. Apply default selection in the sidebar (select the first GM) and render the initial report
+        // Needs to happen *after* event listeners and data are loaded
+        applyDefaultSidebarSelection();
+
+         console.log("Dashboard initialized.");
+    }
+
+    /* Sets up all event listeners required for the dashboard's interactivity */
+    function setupEventListeners() {
+        // Sidebar interactions (handling checkbox clicks and toggle expansion/collapse)
+        hierarchyContainer.addEventListener('click', handleSidebarInteraction);
+
+        // Modal closing listeners for any modals present on the page
+        document.querySelectorAll('.modal-close-btn').forEach(button => {
+            // Use a delegated listener for resilience, but direct is fine for few elements
+            button.addEventListener('click', closeModal);
+        });
+         // Close modal if clicking outside the modal content
+         document.querySelectorAll('.modal-overlay').forEach(overlay => {
+             overlay.addEventListener('click', (event) => {
+                 if (event.target === overlay) { // Check if click was directly on the overlay
+                     closeModal({ target: overlay.querySelector('.modal-close-btn') }); // Trigger close using a button reference
+                 }
+             });
+         });
+
+
+        // Top Menu item handlers: switch views and render content accordingly
+        document.getElementById('transactions-btn').addEventListener('click', e => { updateActiveView('transactions', e.target); renderPlaceholderView('Transactions'); });
+        document.getElementById('live-sales-report-btn').addEventListener('click', e => { updateActiveView('live-sales-report', e.target); updateReportFromSelection(); });
+        document.getElementById('comparison-report-btn').addEventListener('click', e => { updateActiveView('comparison-report', e.target); renderComparisonReport(); });
+        document.getElementById('tva-report-btn').addEventListener('click', e => { updateActiveView('tva-report', e.target); renderTvaReport(); }); // Render TvsA section with its internal upload UI
+        document.getElementById('mapping-btn').addEventListener('click', e => { updateActiveView('mapping', e.target); renderPlaceholderView('Mapping'); }); 
+        document.getElementById('accounts-btn').addEventListener('click', e => { updateActiveView('accounts', e.target); renderPlaceholderView('Accounts'); });
+
+        // Profile menu actions: trigger simple alerts for demonstration
+        document.getElementById('profile-btn').addEventListener('click', () => alert('My Profile action triggered'));
+        document.getElementById('settings-btn').addEventListener('click', () => alert('Settings triggered'));
+        document.getElementById('logout-btn').addEventListener('click', () => alert('Logout triggered'));
+        
+        // Theme toggle listener to switch between light and dark modes
+        document.getElementById('theme-toggle').addEventListener('click', handleThemeToggle);
+        
+        // Event listeners for the TvsA report's internal file upload are set within renderTvaReport() function
+    }
+
+    /* Selects the first GM in the sidebar by default and expands its hierarchy */
+    function applyDefaultSidebarSelection() {
+        // Find the first GM checkbox in the sidebar hierarchy
+        const firstGMRadio = hierarchyContainer.querySelector('input[type="checkbox"][data-level="gm"]');
+        if (firstGMRadio) {
+            // Programmatically click the first GM's checkbox to trigger its selection logic
+            // Use requestAnimationFrame or setTimeout(0) to allow UI rendering before triggering click
+            requestAnimationFrame(() => {
+                const clickEvent = new MouseEvent('click', { bubbles: true, cancelable: true, view: window });
+                firstGMRadio.dispatchEvent(clickEvent);
+
+                 // Find the parent .tree-item and its toggle span
+                 const parentItem = firstGMRadio.closest('.tree-item');
+                 const toggle = parentItem ? parentItem.querySelector('.toggle') : null;
+                 
+                 // Ensure the GM node is expanded after selection logic runs, if it's not already open
+                 // Check the sub-tree display state, not just the toggle class
+                 const subTree = parentItem ? parentItem.querySelector('.sub-tree') : null;
+                 if (subTree && !subTree.classList.contains('open')) {
+                     // Trigger the toggle click if sub-tree is hidden
+                      if(toggle) toggle.dispatchEvent(clickEvent); 
+                 }
+                 
+                 // Also ensure the first ASM is expanded for a better default view
+                 const firstASMCheckbox = parentItem.querySelector('.sub-tree .tree-item.tree-asm input[type="checkbox"]');
+                 if (firstASMCheckbox) {
+                     const firstASMItem = firstASMCheckbox.closest('.tree-item');
+                     const firstASMToggle = firstASMItem ? firstASMItem.querySelector('.toggle') : null;
+                     const firstASMSubTree = firstASMItem ? firstASMItem.querySelector('.sub-tree') : null;
+
+                     if (firstASMSubTree && !firstASMSubTree.classList.contains('open')) {
+                         if (firstASMToggle) firstASMToggle.dispatchEvent(clickEvent);
+                     }
+                 }
+
+
+            });
+
+        } else {
+            // If MAPPING_DATA contains no GMs, render an empty state for the report
+            renderLiveSalesReport([]); 
+        }
+    }
+    
+    /* --- REPORT RENDERING FUNCTIONS --- */
+
+    /* Renders the Live Sales Report table based on the currently selected branches in the sidebar */
+    function renderLiveSalesReport(selectedBranches) {
+        // Ensure the content area exists
+         if (!contentArea) return;
+
+        // Show a placeholder message if no branches are selected
+        if (!selectedBranches || selectedBranches.length === 0) {
+            contentArea.innerHTML = `
+             <div class="view-container glass-effect">
+                 <div class="view-header"><span>Live Sales Report</span></div>
+                 <div class="placeholder-text">Please select branches from the sidebar to view the report.</div>
+             </div>`;
+            return;
+        }
+
+        // Filter all sales data to include only the selected branches
+        const filteredData = allSalesData.filter(item => selectedBranches.includes(item.branch));
+        
+        let tableRows = ''; // String to build the HTML for the table body
+        let grandTotal = { salesValue: 0, invoices: 0 }; // Object to accumulate grand totals
+
+        // Iterate over the filtered sales data to create table rows
+        filteredData.forEach(row => { 
+            tableRows += `<tr>
+                            <td>${row.branch}</td>
+                            <td>${row.gm}</td>
+                            <td>${row.asm}</td>
+                            <td class="number-cell">${Math.round(row.salesValue).toLocaleString("en-IN")}</td>
+                            <td class="number-cell">${Math.round(row.invoices).toLocaleString("en-IN")}</td>
+                            <td class="number-cell">${Math.round(row.avgBill).toLocaleString("en-IN")}</td>
+                          </tr>`;
+            grandTotal.salesValue += row.salesValue; // Sum sales value
+            grandTotal.invoices += row.invoices;     // Sum invoices
+        });
+
+        // Calculate the grand total average bill size
+        grandTotal.avgBill = grandTotal.invoices > 0 ? grandTotal.salesValue / grandTotal.invoices : 0;
+        
+        // Construct the HTML for the grand total row
+        const totalRow = `
+            <tr class="total-row">
+                <td colspan="3">GRAND TOTAL (Selected)</td>
+                <td class="number-cell">${Math.round(grandTotal.salesValue).toLocaleString("en-IN")}</td>
+                <td class="number-cell">${Math.round(grandTotal.invoices).toLocaleString("en-IN")}</td>
+                <td class="number-cell">${Math.round(grandTotal.avgBill).toLocaleString("en-IN")}</td>
+            </tr>`;
+
+        // Update the content area with the generated report table HTML
+        contentArea.innerHTML = `
+            <div class="view-container glass-effect">
+                <div class="view-header"><span>Live Sales Report</span></div>
+                <div class="report-table-container">
+                    <table class="report-table">
+                        <thead>
+                            <tr><th>Branch</th><th>GM</th><th>ASM</th><th>Sales (₹)</th><th>Invoices</th><th>Avg. Bill (₹)</th></tr>
+                        </thead>
+                        <tbody>${tableRows}</tbody> 
+                        <tfoot>${totalRow}</tfoot> 
+                    </table>
+                </div>
+            </div>`;
+    }
+
+    /* Renders a generic placeholder view for sections that are not yet implemented */
+    function renderPlaceholderView(title){
+         if (!contentArea) return;
+        contentArea.innerHTML = `
+            <div class="view-container glass-effect">
+                <div class="view-header"><span>${title}</span></div>
+                <div class="placeholder-text">Content for ${title} is not yet implemented.</div>
+            </div>`;
+    }
+
+    /* Renders the setup interface for the Comparison Report */
+    function renderComparisonReport(){
+         if (!contentArea) return;
+
+        contentArea.innerHTML = `
+            <div class="view-container glass-effect">
+                <div class="view-header"><span>Comparison Report</span></div>
+                <div class="comparison-setup-container">
+                    <fieldset><legend>Group A</legend>
+                        <div class="comparison-setup-form">
+                            <label for="group-a-level">Compare By:</label>
+                            <select id="group-a-level"><option value="">--Select--</option><option value="gm">GM</option><option value="asm">ASM</option><option value="branch">Branch</option><option value="month">Month</option></select>
+                            <label for="group-a-item">Item:</label>
+                            <select id="group-a-item" disabled><option>--Select level first--</option></select>
+                        </div>
+                    </fieldset>
+                    <fieldset><legend>Group B</legend>
+                        <div class="comparison-setup-form">
+                            <label for="group-b-level">Compare By:</label>
+                            <select id="group-b-level"><option value="">--Select--</option><option value="gm">GM</option><option value="asm">ASM</option><option value="branch">Branch</option><option value="month">Month</option></select>
+                            <label for="group-b-item">Item:</label>
+                            <select id="group-b-item" disabled><option>--Select level first--</option></select>
+                        </div>
+                    </fieldset>
+                </div>
+                <div style="text-align: center; padding: 15px;">
+                    <button id="generate-comparison-btn">Generate Report</button>
+                </div>
+                <div id="comparison-results" class="comparison-container"><div class="placeholder-text">Select groups above and click "Generate Report".</div></div> 
+            </div>`;
+        
+        // Add event listeners to the comparison report setup controls
+        document.getElementById("group-a-level").addEventListener("change", e => populateComparisonItems("a", e.target.value));
+        document.getElementById("group-b-level").addEventListener("change", e => populateComparisonItems("b", e.target.value));
+        document.getElementById("generate-comparison-btn").addEventListener("click", generateComparisonTable);
+         // Populate initially disabled select fields
+        populateComparisonItems("a", ""); 
+        populateComparisonItems("b", "");
+    }
+
+    /* Populates dropdowns for comparison report items based on the selected level */
+    function populateComparisonItems(groupKey, level) {
+        const itemSelect = document.getElementById(`group-${groupKey}-item`); // Target select element to populate
+        if (!itemSelect) return; // Safety check
+
+        if (!level || !uniqueData[level]) { // Handle deselection, initial state, or invalid level
+            itemSelect.innerHTML = '<option>--Select level first--</option>'; // Reset options
+            itemSelect.disabled = true; // Disable the select element
+            return;
+        }
+        const items = uniqueData[level]; // Get unique items for the selected level (e.g., GM names)
+        // Populate select options, add a default 'Select...' option
+        itemSelect.innerHTML = '<option value="">--Select--</option>' + items.map(item => `<option value="${item}">${item}</option>`).join('');
+        itemSelect.disabled = false; // Enable the select element
+    }
+
+    /* Generates and displays the comparison table with data bars based on user selections */
+    function generateComparisonTable(){
+        // Get the selected level and item for both comparison groups
+        const groupA = { level: document.getElementById("group-a-level").value, item: document.getElementById("group-a-item").value };
+        const groupB = { level: document.getElementById("group-b-level").value, item: document.getElementById("group-b-item").value };
+
+        const resultsArea = document.getElementById("comparison-results");
+         if (!resultsArea) return; // Safety check
+
+        // Validate that selections have been made for both groups
+        if (!groupA.level || !groupA.item || !groupB.level || !groupB.item || groupA.item === "" || groupB.item === "") {
+            resultsArea.innerHTML = '<div class="placeholder-text">Please select both a level and an item for each group.</div>';
+            return;
+        }
+         // Optional: Prevent comparing the exact same item (level+value) against itself
+        if (groupA.level === groupB.level && groupA.item === groupB.item) {
+             resultsArea.innerHTML = '<div class="placeholder-text">Please select different items to compare.</div>';
+             return;
+        }
+
+
+        // Calculate aggregated totals for comparison using loaded data
+        const dataA = calculateGroupTotals(groupA.level, groupA.item);
+        const dataB = calculateGroupTotals(groupB.level, groupB.item);
+
+        // Determine the maximum values across both groups for scaling the comparison bars proportionally
+        const maxSales = Math.max(dataA.salesValue, dataB.salesValue, 1); // Ensure max is at least 1 to prevent division by zero
+        const maxInvoices = Math.max(dataA.invoices, dataB.invoices, 1);
+        const maxAvgBill = Math.max(dataA.avgBill, dataB.avgBill, 1);
+
+        // Helper function to calculate the width percentage for the data bars
+        const getBarWidth = (value, maxValue) => maxValue > 0 ? (value / maxValue) * 100 : 0;
+
+        // Update the 'comparison-results' div with the generated table HTML
+        resultsArea.innerHTML = `
+            <table class="comparison-table">
+                <thead>
+                    <tr><th>${dataA.name}</th><th>Metric</th><th>${dataB.name}</th></tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td class="bar-cell-a"> 
+                            <div class="bar-wrapper"><div class="bar" style="width: ${getBarWidth(dataA.salesValue, maxSales)}%;"></div><span class="progress-bar-text">${Math.round(dataA.salesValue).toLocaleString("en-IN")}</span></div>
+                        </td>
+                        <td class="metric-cell">Sales Value (₹)</td>
+                        <td class="bar-cell-b"> 
+                             <div class="bar-wrapper"><div class="bar" style="width: ${getBarWidth(dataB.salesValue, maxSales)}%;"></div><span class="progress-bar-text">${Math.round(dataB.salesValue).toLocaleString("en-IN")}</span></div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="bar-cell-a">
+                             <div class="bar-wrapper"><div class="bar" style="width: ${getBarWidth(dataA.invoices, maxInvoices)}%;"></div><span class="progress-bar-text">${Math.round(dataA.invoices).toLocaleString("en-IN")}</span></div>
+                        </td>
+                        <td class="metric-cell">No. of Invoices</td>
+                        <td class="bar-cell-b">
+                             <div class="bar-wrapper"><div class="bar" style="width: ${getBarWidth(dataB.invoices, maxInvoices)}%;"></div><span class="progress-bar-text">${Math.round(dataB.invoices).toLocaleString("en-IN")}</span></div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="bar-cell-a">
+                             <div class="bar-wrapper"><div class="bar" style="width: ${getBarWidth(dataA.avgBill, maxAvgBill)}%;"></div><span class="progress-bar-text">${Math.round(dataA.avgBill).toLocaleString("en-IN")}</span></div>
+                        </td>
+                        <td class="metric-cell">Avg. Bill Size (₹)</td>
+                        <td class="bar-cell-b">
+                             <div class="bar-wrapper"><div class="bar" style="width: ${getBarWidth(dataB.avgBill, maxAvgBill)}%;"></div><span class="progress-bar-text">${Math.round(dataB.avgBill).toLocaleString("en-IN")}</span></div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>`;
+
+          // Optional: Add over-50 class for better text visibility if bar is wide enough
+         resultsArea.querySelectorAll('.bar').forEach(bar => {
+             if (parseFloat(bar.style.width) > 50) {
+                 bar.parentElement.classList.add('over-50');
+             } else {
+                  bar.parentElement.classList.remove('over-50');
+             }
+         });
+
+    }
+
+    /* Aggregates sales data for a given level and item value */
+    function calculateGroupTotals(level, itemValue) {
+        // Filter all sales data based on the selected level and item value
+        const filteredData = allSalesData.filter(data => data[level] === itemValue);
+        
+        // Aggregate sales value and invoices from the filtered data
+        const totals = filteredData.reduce((acc, current) => {
+            acc.salesValue += current.salesValue;
+            acc.invoices += current.invoices;
+            return acc;
+        }, { salesValue: 0, invoices: 0 });
+        
+        // Calculate the average bill size
+        totals.avgBill = totals.invoices > 0 ? totals.salesValue / totals.invoices : 0;
+        totals.name = itemValue; // Use the item's name (e.g., GM name) for display
+        return totals;
+    }
+
+    /* --- SIDEBAR MANAGEMENT FUNCTIONS --- */
+
+    /* Populates the sidebar with GM > ASM > Branch hierarchy from MAPPING_DATA */
+    function populateHierarchySidebar(){
+         if (!hierarchyContainer) return;
+
+        // Organize MAPPING_DATA into a nested structure for tree view generation
+        const organizedData = MAPPING_DATA.reduce((acc, item) => {
+            if (!acc[item.gm]) acc[item.gm] = {};
+            if (!acc[item.gm][item.asm]) acc[item.gm][item.asm] = [];
+            acc[item.gm][item.asm].push(item.branch);
+            return acc;
+        }, {});
+
+        let sidebarHTML = '<ul class="tree-node">'; // Start the main tree list
+        const sortedGMs = Object.keys(organizedData).sort(); // Sort GMs
+        sortedGMs.forEach(gmName => { // Iterate through each GM
+            sidebarHTML += `<li class="tree-item tree-gm">
+                                <span class="toggle">▶</span>
+                                <label>
+                                    <input type="checkbox" data-level="gm" data-id="${gmName}">${gmName}
+                                </label>
+                                <ul class="sub-tree">`; // Start sub-list for ASMs
+            const sortedASMs = Object.keys(organizedData[gmName]).sort(); // Sort ASMs
+            sortedASMs.forEach(asmName => { // Iterate through each ASM under the GM
+                sidebarHTML += `<li class="tree-item tree-asm">
+                                    <span class="toggle">▶</span>
+                                    <label>
+                                        <input type="checkbox" data-level="asm" data-id="${asmName}">${asmName}
+                                    </label>
+                                    <ul class="sub-tree">`; // Start sub-list for branches
+                const sortedBranches = organizedData[gmName][asmName].sort(); // Sort Branches
+                sortedBranches.forEach(branchName => { // Iterate through branches under the ASM
+                    sidebarHTML += `<li class="tree-item tree-branch">
+                                        <label>
+                                            <input type="checkbox" data-level="branch" data-id="${branchName}">${branchName}
+                                        </label>
+                                    </li>`;
+                });
+                sidebarHTML += `</ul></li>`; // Close branches sub-list
+            });
+            sidebarHTML += `</ul></li>`; // Close ASMs sub-list
+        });
+        sidebarHTML += '</ul>'; // Close main tree list
+        hierarchyContainer.innerHTML = sidebarHTML; // Inject the generated HTML into the sidebar container
+    }
+
+    /* Handles user interactions within the sidebar (checkbox clicks, toggle clicks) */
+    function handleSidebarInteraction(event) {
+        const target = event.target;
+
+        // --- Handle Toggle Click ---
+        if (target.classList.contains("toggle")) { // If a toggle arrow was clicked
+            const item = target.closest(".tree-item");
+            const subTree = item ? item.querySelector(".sub-tree") : null;
+             if (subTree) {
+                target.classList.toggle("open"); // Toggle rotation class for visual feedback
+                subTree.classList.toggle("open"); // Toggle visibility of the subtree
+             }
+             // Stop propagation to prevent the click from potentially also ticking the label's checkbox
+             event.stopPropagation();
+        }
+
+        // --- Handle Checkbox Click ---
+        if (target.type === "checkbox") { // If a checkbox was interacted with
+             // Prevent click propagation from the label to the checkbox
+             if (event.target !== target) return; // Only process if the actual checkbox was clicked
+
+
+            const currentItem = target.closest(".tree-item"); // Get the parent list item
+            const isChecked = target.checked;
+            // Note: Indeterminate state is *visual only* on user click unless programmatically set
+
+            // Propagate the checked state downwards
+            currentItem.querySelectorAll(':scope > .sub-tree .tree-item input[type="checkbox"]').forEach(childCheckbox => {
+                childCheckbox.checked = isChecked; // Set the child's checked state
+                childCheckbox.indeterminate = false; // Children are either fully checked or unchecked
+            });
+             
+             // Update parent states upwards after a change
+            updateParentCheckboxStates(currentItem);
+
+
+            // Refresh the relevant reports based on the updated sidebar selection
+            updateReportFromSelection(); // Update Live Sales Report if it's the active view
+            // TvsA update happens within renderTvaReport or updateTvaReportFromSelection itself
+        }
+    }
+
+    /* Recursively updates the checked and indeterminate state of parent checkboxes */
+     function updateParentCheckboxStates(childItem) {
+         let parentItem = childItem.parentElement.closest(".tree-item"); // Get the closest ancestor .tree-item
+         
+         while (parentItem) {
+             const parentCheckbox = parentItem.querySelector(':scope > label > input[type="checkbox"]');
+             if (!parentCheckbox) {
+                 // Should not happen if structure is correct, but safe check
+                 parentItem = parentItem.parentElement.closest(".tree-item"); 
+                 continue; 
+             }
+
+             // Get all direct children checkboxes for the current parent item's subtree
+             const childCheckboxes = parentItem.querySelectorAll(':scope > .sub-tree > .tree-item > label > input[type="checkbox"]');
+
+             if (childCheckboxes.length === 0) {
+                 // If a parent has no visible children checkboxes (e.g., an empty ASM list), 
+                 // its state depends only on itself, or it might shouldn't be interactable.
+                 // For this structure, it implies a structure error or unexpected state.
+                 // We assume parents will have children if they are higher in the hierarchy.
+             } else {
+                 let allChildrenChecked = true;
+                 let someChildrenChecked = false;
+
+                 childCheckboxes.forEach(cb => {
+                     if (cb.checked || cb.indeterminate) { // Count checked OR indeterminate children as 'checked enough' to be 'some'
+                         someChildrenChecked = true;
+                     }
+                     if (!cb.checked) { // Only count *fully checked* for the 'all' state
+                         allChildrenChecked = false;
+                     }
+                 });
+
+                 if (allChildrenChecked) {
+                     parentCheckbox.checked = true;
+                     parentCheckbox.indeterminate = false;
+                 } else if (someChildrenChecked) {
+                     parentCheckbox.checked = false; // Cannot be fully checked
+                     parentCheckbox.indeterminate = true;
+                 } else { // No children checked or indeterminate
+                     parentCheckbox.checked = false;
+                     parentCheckbox.indeterminate = false;
+                 }
+             }
+
+             // Move up to the next parent level
+             parentItem = parentItem.parentElement.closest(".tree-item");
+         }
+     }
+
+
+    /* Refreshes the active report based on the current sidebar selections */
+    function updateReportFromSelection(){
+        // This function primarily updates the Live Sales Report
+        if(activeView === 'live-sales-report') { 
+            // Get the list of selected branch IDs from the sidebar checkboxes
+            const selectedBranches = Array.from(hierarchyContainer.querySelectorAll('input[data-level="branch"]:checked')).map(cb=>cb.dataset.id);
+            // Re-render the Live Sales Report with the newly selected branches
+            renderLiveSalesReport(selectedBranches);
+        } else if (activeView === 'tva-report') {
+            // If TvsA report is visible and the table is being shown (not the upload UI)
+             const tvaReportMainView = document.getElementById('tva-report-main-view');
+             if (tvaReportMainView && tvaReportMainView.style.display === 'flex') {
+                // Update TvsA table based on selection changes
+                 updateTvaReportFromSelection(); 
+             }
+            // Comparison Report update is manually triggered by the Generate button
+        }
+    }
+    
+    /* --- TvsA REPORT SPECIFIC FUNCTIONS --- */
+
+    /* Renders the TvsA Report section, including its embedded upload UI */
+    function renderTvaReport() {
+        if (!contentArea) return;
+
+        contentArea.innerHTML = `
+            <div class="view-container glass-effect">
+                <div class="view-header"><span>Target vs Achievement Report</span></div>
+                <!-- TvsA Upload UI - displayed when TvsA report is selected -->
+                <div class="tva-upload-container" id="tva-upload-view" style="display: flex;"> 
+                    <div class="tva-upload-box glass-effect">
+                       <h3>Upload TvsA Data File</h3>
+                       <p style="font-size:11px; color:var(--text-light);">Select your .xlsx or .csv file.</p>
+                       <input type="file" id="tva-file-input" accept=".xlsx, .xls, .csv" style="display:none;">
+                        <label for="tva-file-input" class="file-input-label">Choose File</label>
+                       <span id="tva-file-name-display" class="file-name-display">No file chosen</span>
+                       <span id="tva-upload-indicator" class="upload-complete-indicator" style="display:none;">&#10003;</span>
+                       <button id="process-tva-file-btn" disabled>Process Selected File</button>
+                    </div>
+                </div>
+                <!-- TvsA Report Table Container - hidden by default until file processing -->
+                <div class="tva-report-main-view" id="tva-report-main-view" style="display: none;"> 
+                    <div class="tva-report-container"><table class="tva-table"><thead><tr><th>Branch</th><th>GM</th><th>ASM</th><th>Finance Sale Count (Ach / Target)</th><th>Finance Sale Value (Ach / Target)</th><th>UPI Value (Ach / Target)</th></tr></thead><tbody id="tva-report-body"></tbody></table></div>
+                </div>
+            </div>`;
+        
+        // Set up event listeners for the TvsA file upload components
+        const tvaFileInput = document.getElementById('tva-file-input');
+        const tvaFileNameDisplay = document.getElementById('tva-file-name-display');
+        const tvaIndicator = document.getElementById('tva-upload-indicator');
+        const tvaProcessBtn = document.getElementById('process-tva-file-btn');
+
+        if (tvaFileInput && tvaFileNameDisplay && tvaIndicator && tvaProcessBtn) {
+             tvaFileInput.addEventListener('change', () => { // Handle file selection changes
+                 if(tvaFileInput.files.length > 0) { // If a file is selected
+                     tvaFileNameDisplay.textContent = tvaFileInput.files[0].name; 
+                     tvaIndicator.style.display = 'inline'; // Show success checkmark indicator
+                     tvaProcessBtn.disabled = false; // Enable the 'Process Selected File' button
+                 } else { // If file selection is cleared
+                     tvaFileNameDisplay.textContent = 'No file chosen'; 
+                     tvaIndicator.style.display = 'none'; // Hide checkmark
+                     tvaProcessBtn.disabled = true; // Disable the button
+                 }
+             });
+             
+             tvaProcessBtn.addEventListener('click', () => { // Listener for the process button
+                 console.log("Processing TvsA file (simulated)..."); 
+                 // Hide the upload UI and show the report table UI
+                 document.getElementById('tva-upload-view').style.display = 'none'; 
+                 document.getElementById('tva-report-main-view').style.display = 'flex'; 
+                 // Populate the report table using the data loaded during dashboard initialization
+                 updateTvaReportFromSelection(); 
+             });
+        }
+    }
+    
+    /* Populates the TvsA report table with data based on current sidebar selections */
+    function updateTvaReportFromSelection() {
+        // Ensure this logic runs only when the TvsA report view is active AND the table body element exists
+        const tvaBody = document.getElementById('tva-report-body');
+        if (activeView !== 'tva-report' || !tvaBody) return;
+        
+        // Get currently selected branch IDs from sidebar checkboxes
+        const selectedBranches = Array.from(hierarchyContainer.querySelectorAll('input[data-level="branch"]:checked')).map(cb => cb.dataset.id);
+        
+        if (selectedBranches.length === 0) { // If no branches are selected, show a placeholder message
+            tvaBody.innerHTML = '<tr><td colspan="6" class="placeholder-text">Please select one or more branches.</td></tr>'; 
+            return; 
+        }
+        
+        let rowsHtml = ''; // HTML string to build the table rows
+        selectedBranches.forEach(branchName => { // Iterate through each selected branch
+            // Find corresponding data entries (from MAPPING_DATA, tvaTargets, tvaAchievements)
+            const mapping = MAPPING_DATA.find(d => d.branch === branchName);
+            const target = tvaTargets.find(d => d.branch === branchName);
+            const achievement = tvaAchievements.find(d => d.branch === branchName);
+            
+            if (!mapping) { // Skip row if mapping is missing
+                 console.warn(`Mapping data missing for branch ${branchName}, skipping row.`);
+                 return;
+            }
+             // Use default data if target or achievement is missing for a branch
+             const branchTarget = target || { fin_sale_count: 0, fin_sale_value: 0, upi_value: 0 };
+             const branchAchievement = achievement || { financers: {}, total_fin_count: 0, total_fin_value: 0, upi_value: 0 };
+
+
+            // Construct table row HTML, including progress bars for achievements vs targets
+            rowsHtml += `<tr data-branch="${branchName}" class="tva-row">
+                            <td>${branchName}</td>
+                            <td>${mapping.gm}</td>
+                            <td>${mapping.asm}</td>
+                            <td>${buildProgressBar(branchAchievement.total_fin_count, branchTarget.fin_sale_count, 0)}</td> 
+                            <td>${buildProgressBar(branchAchievement.total_fin_value, branchTarget.fin_sale_value, 0)}</td> 
+                            <td>${buildProgressBar(branchAchievement.upi_value, branchTarget.upi_value, 0)}</td> 
+                        </tr>`;
+        });
+        tvaBody.innerHTML = rowsHtml; // Update the table body content
+        // Add click listeners to each row to trigger the detail modal when clicked
+        tvaBody.querySelectorAll('.tva-row').forEach(row => row.addEventListener('click', () => showTvaDetailModal(row.dataset.branch)));
+    }
+    
+    /* Opens the TvsA detail modal displaying financer breakdown and performance FAQs */
+    function showTvaDetailModal(branchName) {
+        const modal = document.getElementById('tva-detail-modal'); 
+         if (!modal) return; // Safety check
+
+        const titleElement = document.getElementById('tva-modal-title');
+         if(titleElement) titleElement.textContent = `${branchName} - Details`;
+        
+        // Find achievement data for the specified branch
+        const achievementData = tvaAchievements.find(d => d.branch === branchName);
+         const targetData = tvaTargets.find(d => d.branch === branchName); // Also need targets for some logic
+        if (!achievementData || !targetData) {
+             const modalBody = document.getElementById('tva-modal-body');
+             if(modalBody) modalBody.innerHTML = '<div class="placeholder-text">Data not available for this branch.</div>';
+              modal.style.display = 'flex';
+              requestAnimationFrame(() => modal.classList.add('open')); // Animate in
+             return; // Exit if no achievement data found
+         }
+
+        let cardsHtml = ''; // HTML string for financer cards
+         const financerKeys = Object.keys(achievementData.financers).sort(); // Sort financer names
+        // Build financer cards from the achievement data's 'financers' object
+         financerKeys.forEach(f => { 
+            cardsHtml += `<div class="financer-card">
+                            <div class="financer-card-name">${f.replace('_',' ').toUpperCase()}</div>
+                            <span class="financer-card-metric">Count:</span>
+                            <div class="financer-card-value">${Math.round(achievementData.financers[f].count).toLocaleString('en-IN')}</div>
+                            <span class="financer-card-metric">Value (₹):</span>
+                            <div class="financer-card-value">${Math.round(achievementData.financers[f].value).toLocaleString('en-IN')}</div>
+                          </div>`; 
+        });
+        // Add a separate card for UPI achieved value
+        cardsHtml += `<div class="financer-card" style="background-color: rgba(0, 150, 255, 0.15); border-color: rgba(0, 150, 255, 0.2);"> 
+                        <div class="financer-card-name" style="color: var(--text-main);">UPI</div> 
+                        <span class="financer-card-metric">Value (₹):</span>
+                        <div class="financer-card-value">${Math.round(achievementData.upi_value).toLocaleString('en-IN')}</div>
+                      </div>`;
+
+        // Get performance insights (FAQs) for the branch
+        const faq = updateFaqContent(branchName, targetData, achievementData); 
+        
+         const modalBody = document.getElementById('tva-modal-body');
+         if(modalBody) {
+             // Set the modal's body content dynamically
+             modalBody.innerHTML = `
+                 <div class="financer-cards-container">${cardsHtml}</div>
+                 <button class="idea-box-btn" data-branch="${branchName}">Open Idea Box / Projections</button>
+                 <div class="sales-drive-section">
+                     <h4>Performance Insights & FAQs</h4>
+                     <details>
+                         <summary>What can we do to achieve the overall target?</summary>
+                         <div class="faq-answer">${faq.overall}</div>
+                     </details>
+                     <details>
+                         <summary>Which finance partner needs MORE focus?</summary>
+                         <div class="faq-answer">${faq.more_focus}</div>
+                     </details>
+                     <details>
+                         <summary>Which finance partner is performing well?</summary>
+                         <div class="faq-answer">${faq.less_focus}</div>
+                     </details>
+                 </div>`;
+             
+             // Add event listener to the "Idea Box" button to open its corresponding modal
+             const ideaBoxBtn = modalBody.querySelector('.idea-box-btn');
+             if (ideaBoxBtn) {
+                ideaBoxBtn.addEventListener('click', (e) => showIdeaModal(e.target.dataset.branch));
+             }
+         }
+        
+        // Display and animate the modal
+        modal.style.display = 'flex'; // Show the modal overlay (it's hidden by default)
+         // Add the 'open' class in the next animation frame to allow the display change to register before animating
+        requestAnimationFrame(() => modal.classList.add('open'));
+    }
+    
+    /* Generates performance insights (FAQs) for a branch based on TvsA data */
+    function updateFaqContent(branchName, target, achievement) {
+        // Data should be passed directly for reliability
+        if (!target || !achievement) return { overall: "Data not available.", more_focus: "N/A", less_focus: "N/A" }; 
+
+        const salesValueShortfall = target.fin_sale_value - achievement.total_fin_value; // Calculate sales shortfall
+        
+         const financerAchievementValues = Object.values(achievement.financers).map(f => f.value);
+         const totalFinancerValueAchieved = financerAchievementValues.reduce((sum, val) => sum + val, 0);
+         const financerNames = Object.keys(achievement.financers);
+         
+        // Avoid division by zero if no financer value achieved or no financers tracked
+         const avgAchievedPerFinancer = (totalFinancerValueAchieved > 0 && financerNames.length > 0) ? totalFinancerValueAchieved / financerNames.length : 0;
+         const targetFinancerValue = (target.fin_sale_value > 0 && financerNames.length > 0) ? target.fin_sale_value / financerNames.length : 0;
+
+
+        // Rank financers based on their performance value relative to average target
+        let financerPerformance = financerNames.map(f => ({
+            name: f.replace('_',' ').toUpperCase(),
+            achievementValue: achievement.financers[f]?.value || 0, // Handle cases where a financer exists but has no value data
+            performancePct: targetFinancerValue > 0 ? ((achievement.financers[f]?.value || 0) / targetFinancerValue) * 100 : 0 // Performance percentage vs avg target
+        })).sort((a, b) => a.performancePct - b.performancePct); // Sort ascending
+
+        // Ensure there are at least two financers to compare
+        let lessFocusPartner = 'N/A (Not enough data or partners)';
+        let moreFocusPartner = 'N/A (Not enough data or partners)';
+
+         if (financerPerformance.length > 0) {
+             moreFocusPartner = financerPerformance[0]?.name || 'N/A'; // Lowest performer
+             if (financerPerformance.length > 1) {
+                  lessFocusPartner = financerPerformance[financerPerformance.length - 1]?.name || 'N/A'; // Highest performer
+             }
+         }
+
+
+        // Craft FAQ responses based on the analysis
+        const response = {
+            overall: `The branch has achieved <strong>₹${Math.round(achievement.total_fin_value).toLocaleString('en-IN')}</strong> out of a target of <strong>₹${Math.round(target.fin_sale_value).toLocaleString('en-IN')}</strong> for finance sales value. The shortfall is <strong>₹${Math.round(salesValueShortfall).toLocaleString('en-IN')}</strong>. Additionally, <strong>₹${Math.round(achievement.upi_value).toLocaleString('en-IN')}</strong> has been achieved via UPI against a target of <strong>₹${Math.round(target.upi_value).toLocaleString('en-IN')}</strong>. Focus on optimizing conversion rates, average ticket size for finance, and promoting UPI adoption to meet the overall targets.`,
+            more_focus: `Consider dedicating more focus and training to <strong>${moreFocusPartner}</strong>, as it's currently tracking behind compared to the average expected performance per financer based on target allocation.`,
+            less_focus: `<strong>${lessFocusPartner}</strong> is performing commendably relative to the average expected performance per financer based on target allocation. Analyze its success factors and explore replicating best practices across other partners.`
+        };
+        return response;
+    }
+    
+    /* Builds the HTML for a progress bar visualizing achievement vs. target */
+     function buildProgressBar(ach, tar, decimalPlaces = 0) {
+         const percentage = tar > 0 ? (ach / tar) * 100 : 0; // Calculate percentage, handle division by zero
+         // Round numbers for display
+         const achievedDisplay = parseFloat(ach).toLocaleString('en-IN', { maximumFractionDigits: decimalPlaces });
+         const targetDisplay = parseFloat(tar).toLocaleString('en-IN', { maximumFractionDigits: decimalPlaces });
+
+         const text = `${achievedDisplay}/${targetDisplay} (${Math.round(percentage)}%)`; // Format display text
+         
+         const containerClass = percentage > 50 ? 'over-50' : ''; // Add class if progress is over 50%
+
+         return `
+             <div class="progress-bar-container ${containerClass}">
+                 <div class="progress-bar-fill" style="width: ${Math.min(percentage, 100)}%;"> 
+                      
+                 </div>
+                 <span class="progress-bar-text">${text}</span> 
+             </div>`;
+     }
+
+
+    /* Shows the Idea Box modal with projection details */
+    function showIdeaModal(branchName) {
+        const modal = document.getElementById('idea-box-modal');
+         if (!modal) return; // Safety check
+
+        const body = document.getElementById('idea-modal-body'); 
+         if (!body) return; // Safety check
+
+        const titleElement = document.getElementById('idea-modal-title');
+        if(titleElement) titleElement.textContent = `${branchName} - Projections`;
+        
+        const daysInMonth = 30; // Assuming a 30-day month for calculations
+        const daysPassed = 15; // Example: Assuming data covers the first 15 days of the month
+        const daysRemaining = daysInMonth - daysPassed; // Calculate remaining days
+
+        // Helper function to calculate projection metrics (current rate, required rate, projected total)
+        const calculateProjection = (achieved, target) => { 
+            // Avoid division by zero if daysPassed is 0 or daysRemaining is 0
+            const currentRate = daysPassed > 0 ? achieved / daysPassed : 0; 
+            const shortfall = target - achieved; // Calculate the remaining target amount
+            const requiredRate = (shortfall > 0 && daysRemaining > 0) ? shortfall / daysRemaining : 0; 
+            // Calculate the projected total achievement based on current rate (extrapolated)
+            const projection = achieved + (currentRate * daysRemaining); // Base on current daily rate
+
+
+            return { currentRate, requiredRate, projection };
+        };
+        
+        // Get target and achievement data for the branch
+        const targetData = tvaTargets.find(d => d.branch === branchName);
+        const achievementData = tvaAchievements.find(d => d.branch === branchName);
+        
+        if (!targetData || !achievementData) {
+            body.innerHTML = '<div class="placeholder-text">Projection data not available for this branch.</div>';
+             modal.style.display = 'flex';
+             requestAnimationFrame(() => modal.classList.add('open'));
+            return; // Exit if data is missing
+        }
+
+        // Calculate projections for sale count and sale value
+        const countProjection = calculateProjection(achievementData.total_fin_count, targetData.fin_sale_count);
+        const valueProjection = calculateProjection(achievementData.total_fin_value, targetData.fin_sale_value);
+        
+        // Set the modal's body content with projection details
+        body.innerHTML = `
+            <p>Based on performance over <strong>${daysPassed} out of ${daysInMonth}</strong> days:</p><hr>
+            
+            <strong>Finance Sale Count:</strong>
+            <ul>
+                <li><span class="metric">Achieved So Far:</span> <span class="value">${Math.round(achievementData.total_fin_count).toLocaleString('en-IN')}</span></li>
+                <li><span class="metric">Target:</span> <span class="value">${Math.round(targetData.fin_sale_count).toLocaleString('en-IN')}</span></li>
+                <li><span class="metric">Current Daily Rate:</span> <span class="value">${countProjection.currentRate.toFixed(1)} units/day</span></li>
+                <li><span class="metric">Required Daily Rate:</span> <span class="value">${Math.max(0, countProjection.requiredRate).toFixed(1)} units/day</span></li> 
+                <li><span class="metric">Projected Total:</span> <span class="value">${Math.round(countProjection.projection).toLocaleString('en-IN')}</span></li>
+            </ul>
+            
+            <strong>Finance Sale Value (₹):</strong>
+            <ul>
+                <li><span class="metric">Achieved So Far:</span> <span class="value">₹${Math.round(achievementData.total_fin_value).toLocaleString('en-IN')}</span></li>
+                <li><span class="metric">Target:</span> <span class="value">₹${Math.round(targetData.fin_sale_value).toLocaleString('en-IN')}</span></li>
+                <li><span class="metric">Current Daily Rate:</span> <span class="value">₹${Math.round(valueProjection.currentRate).toLocaleString('en-IN')}/day</span></li>
+                <li><span class="metric">Required Daily Rate:</span> <span class="value">₹${Math.round(Math.max(0, valueProjection.requiredRate)).toLocaleString('en-IN')}/day</span></li> 
+                <li><span class="metric">Projected Total:</span> <span class="value">₹${Math.round(valueProjection.projection).toLocaleString('en-IN')}</span></li>
+            </ul>
+        `;
+        
+        // Display and animate the modal
+        modal.style.display = 'flex'; // Show the modal overlay
+        requestAnimationFrame(() => modal.classList.add('open')); // Animate in
+    }
+
+    /* --- GENERAL UI AND HELPER FUNCTIONS --- */
+
+    /* Updates the active view and highlights the correct top menu item */
+    function updateActiveView(newView, clickedElement) {
+        activeView = newView; // Set the new active view state
+        
+        // Remove 'active' class from all top menu items
+        document.querySelectorAll("#main-top-menu .top-menu-left > div, #main-top-menu .top-menu-right > div").forEach(el => el.classList.remove("active"));
+        // Find the top-level clickable element for the clicked dropdown item if necessary
+         let topLevelElement = clickedElement;
+         // Traverse up if the clicked element is inside a dropdown, to find the menu item that owns the dropdown
+         if (clickedElement && clickedElement.closest('.dropdown')) {
+             // Assuming dropdowns are directly inside a div sibling of the label
+             topLevelElement = clickedElement.closest('.dropdown').parentElement;
+         }
+
+        // Add 'active' class to the identified top-level element
+        if(topLevelElement) topLevelElement.classList.add("active");
+
+        // Close any open modals when the view changes
+        document.querySelectorAll(".modal-overlay.open").forEach(modal => closeModal({ target: modal.querySelector('.modal-close-btn') })); // Trigger close animation
+    }
+
+    /* Toggles the theme between light and dark mode */
+    function handleThemeToggle() {
+        const body = document.body;
+        const sunIcon = document.getElementById("theme-icon-sun");
+        const moonIcon = document.getElementById("theme-icon-moon");
+
+         // Prevent animation during initial load theme setting
+         body.style.transition = 'none'; 
+         mainSidebar.style.transition = 'none';
+         mainTopMenu.style.transition = 'none';
+         document.querySelectorAll('.glass-effect').forEach(el => el.style.transition = 'none');
+
+
+        body.classList.toggle("dark-theme"); // Toggle the theme class on the body element
+
+        // Update the display of theme icons based on the current theme
+        const isDark = body.classList.contains("dark-theme");
+        if (sunIcon) sunIcon.style.display = isDark ? "none" : "block";
+        if (moonIcon) moonIcon.style.display = isDark ? "block" : "none";
+
+        // Save the theme preference
+        localStorage.setItem("theme", isDark ? "dark" : "light");
+        
+         // Re-enable transitions after a very short delay to allow the theme class to apply
+         requestAnimationFrame(() => {
+              body.style.transition = '';
+              mainSidebar.style.transition = '';
+              mainTopMenu.style.transition = '';
+              document.querySelectorAll('.glass-effect').forEach(el => el.style.transition = '');
+              // Restore specific glass transitions manually if needed, or rely on the main class rule
+         });
+
+    }
+
+    /* Applies the theme preference stored in localStorage when the page loads */
+    function applyInitialTheme() {
+         // Disable transitions briefly during initial application
+         const body = document.body;
+         body.style.transition = 'none';
+         mainSidebar.style.transition = 'none';
+         mainTopMenu.style.transition = 'none';
+         document.querySelectorAll('.glass-effect').forEach(el => el.style.transition = 'none');
+
+        if (localStorage.getItem("theme") === "dark") { // Check if dark theme is stored
+            body.classList.add("dark-theme"); // Apply dark theme class to body
+        } // else 'light' theme (default) is already active
+        
+        // Update icon visibility immediately after applying the class
+        const isDark = body.classList.contains("dark-theme");
+        const sunIcon = document.getElementById("theme-icon-sun");
+        const moonIcon = document.getElementById("theme-icon-moon");
+        if (sunIcon) sunIcon.style.display = isDark ? "none" : "block";
+        if (moonIcon) moonIcon.style.display = isDark ? "block" : "none";
+
+         // Re-enable transitions after a very short delay
+         requestAnimationFrame(() => {
+              body.style.transition = '';
+              mainSidebar.style.transition = '';
+              mainTopMenu.style.transition = '';
+               document.querySelectorAll('.glass-effect').forEach(el => el.style.transition = '');
+         });
+    }
+
+
+    /* Closes a modal identified by its 'data-target' attribute */
+    function closeModal(event) {
+        const targetModalId = event.target.dataset.target;
+        if (targetModalId) {
+            const modal = document.getElementById(targetModalId);
+            if (modal) {
+                // Add listener to set display: none *after* transition ends
+                 const handleTransitionEnd = (e) => {
+                     // Ensure it's the opacity transition finishing on the modal overlay
+                     if (e.propertyName === 'opacity' && e.target === modal) {
+                         modal.style.display = 'none';
+                         modal.removeEventListener('transitionend', handleTransitionEnd);
+                     }
+                 };
+                
+                modal.addEventListener('transitionend', handleTransitionEnd);
+                
+                // Remove the 'open' class to start the fade-out and scale-down animation
+                modal.classList.remove('open');
+                // The `transitionend` listener will set `display: none` when opacity reaches 0.
+            }
+        }
+    }
+    
+    /* Sets the 'active' class on the correct top menu item for visual indication */
+     // This function is now implicitly called by `updateActiveView` via event delegation on clicks.
+     // Kept for completeness, though less directly used outside `updateActiveView` now.
+    function setActiveMenu(element) {
+      // Remove 'active' class from all top menu items first
+      document.querySelectorAll("#main-top-menu .top-menu-left > div, #main-top-menu .top-menu-right > div").forEach(el => el.classList.remove("active"));
+      // Add 'active' class to the specified element if it exists
+      if(element) element.classList.add("active");
+    }
+
+
+    // Start the application by calling the initializeApp function once the DOM is ready.
+    initializeApp(); 
+});
+</script>
+</body>
+</html>
